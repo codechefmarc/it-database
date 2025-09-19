@@ -44,12 +44,13 @@ class LoginController extends Controller {
     if (Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
       $request->session()->regenerate();
       $user = Auth::user();
-      if (!$user->isReadOnly()) {
-        return redirect()->intended('/log');
-      }
-      else {
-        return redirect()->intended('/search');
-      }
+      return redirect()->intended('/');
+      // if (!$user->isReadOnly()) {
+      //   return redirect()->intended('/log');
+      // }
+      // else {
+      //   return redirect()->intended('/search');
+      // }
     }
 
     return back()->withErrors([

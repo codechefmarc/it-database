@@ -1,4 +1,4 @@
-@auth
+{{-- @auth
   @if(auth()->user()->canEdit() || auth()->user()->isStudent())
     <x-nav-link href="{{ route('log') }}" :active="request()->routeIs('log')">Log Activity</x-nav-link>
   @endif
@@ -9,6 +9,11 @@
     <x-nav-link href="{{ route('search') }}" :active="request()->routeIs('search')">Search</x-nav-link>
     <x-nav-link href="{{ route('reports') }}" :active="request()->routeIs('reports')">Reports</x-nav-link>
   @endif
+@endauth
+ --}}
+
+@auth
+  <x-nav-link href="{{ route('assets.create') }}" :active="request()->RouteIs('bulk_scan_assets')">Bulk Scan Assets</x-nav-link>
 @endauth
 
 @auth
