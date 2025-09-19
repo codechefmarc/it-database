@@ -6,11 +6,29 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Service to interact with TopDesk API for locations and asset management.
+ */
 class TopDeskService {
+  /**
+   * TopDesk API base URL.
+   */
   private string $baseUrl;
+  /**
+   * TopDesk API credentials (username).
+   */
   private string $username;
+  /**
+   * TopDesk API credentials (password).
+   */
   private string $password;
+  /**
+   * Cache duration in minutes (default: 60 minutes).
+   */
   private int $cacheMinutes = 60;
+  /**
+   * TopDesk asset template ID. Default is "Computer".
+   */
   private string $topDeskTemplateId = "A273AF5F-0881-4ABB-A66A-E3307631BF46";
 
   public function __construct() {
@@ -31,6 +49,8 @@ class TopDeskService {
    * Get all locations from TopDesk (cached)
    *
    * @return array
+   *   Retrieves all locations from TopDesk, cached to minimize API calls.
+   *
    * @throws Exception
    */
   public function getLocations(): array {
@@ -51,7 +71,7 @@ class TopDeskService {
       }
       catch (\Exception $e) {
         Log::error('TopDesk API Error - Get Locations', [
-            'message' => $e->getMessage()
+          'message' => $e->getMessage(),
         ]);
         throw $e;
       }
@@ -62,6 +82,7 @@ class TopDeskService {
    * Get campuses/branches for select dropdown.
    *
    * @return array
+   *   Returns array with id and name for campuses (branches).
    */
   public function getCampuses(): array {
     $locations = $this->getLocations();
@@ -71,7 +92,7 @@ class TopDeskService {
       if (isset($location['branch']) && $location['branch']) {
         $branchId = $location['branch']['id'];
 
-        // Only add if we haven't seen this branch before
+        // Only add if we haven't seen this branch before.
         if (!isset($campuses[$branchId])) {
           $campuses[$branchId] = [
             'id' => $branchId,
@@ -81,7 +102,7 @@ class TopDeskService {
       }
     }
 
-    // Return as indexed array, sorted by name
+    // Return as indexed array, sorted by name.
     $result = array_values($campuses);
     usort($result, fn($a, $b) => strcasecmp($a['name'], $b['name']));
 
@@ -89,11 +110,13 @@ class TopDeskService {
   }
 
   /**
-   * Get buildings for a specific campus/branch
-   * Returns array with id and name for buildings in the specified branch
+   * Get buildings for a specific campus/branch.
    *
    * @param string $branchId
+   *   The ID of the campus/branch to filter buildings.
+   *
    * @return array
+   *   Returns array with id and name for buildings in the specified campus.
    */
   public function getBuildingsByCampus(string $branchId): array {
     $locations = $this->getLocations();
@@ -110,16 +133,17 @@ class TopDeskService {
       }
     }
 
-    // Sort by name
+    // Sort by name.
     usort($buildings, fn($a, $b) => strcasecmp($a['name'], $b['name']));
 
     return $buildings;
   }
 
   /**
-   * Get all locations grouped by campus for easier frontend handling
+   * Get all locations grouped by campus for easier frontend handling.
    *
    * @return array
+   *   Returns array of campuses, each with their associated buildings.
    */
   public function getLocationsByCampus(): array {
     $locations = $this->getLocations();
@@ -132,9 +156,9 @@ class TopDeskService {
 
         if (!isset($grouped[$branchId])) {
           $grouped[$branchId] = [
-              'id' => $branchId,
-              'name' => $branchName,
-              'buildings' => []
+            'id' => $branchId,
+            'name' => $branchName,
+            'buildings' => [],
           ];
         }
 
@@ -145,7 +169,7 @@ class TopDeskService {
       }
     }
 
-    // Sort campuses and buildings by name
+    // Sort campuses and buildings by name.
     foreach ($grouped as &$campus) {
       usort($campus['buildings'], fn($a, $b) => strcasecmp($a['name'], $b['name']));
     }
@@ -157,19 +181,51 @@ class TopDeskService {
   }
 
   /**
-   * Clear the locations cache
+   * Get makes for select dropdown.
+   */
+  public function getAssetMakes(): array {
+    return Cache::remember('topdesk.make', $this->cacheMinutes * 60, function () {
+      try {
+        $response = Http::withBasicAuth($this->username, $this->password)
+          ->withHeaders([
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+          ])->timeout(30)->get($this->baseUrl . '/tas/api/assetmgmt/dropdowns/make?field=name');
+
+        if ($response->successful()) {
+            return $response->json();
+        }
+
+        throw new \Exception('Failed to fetch make from TopDesk API. Status: ' . $response->status());
+
+      }
+      catch (\Exception $e) {
+        Log::error('TopDesk API Error - Get Make', [
+          'message' => $e->getMessage(),
+        ]);
+        throw $e;
+      }
+    });
+  }
+
+  /**
+   * Clear the locations cache.
    *
    * @return void
+   *   Clears the cached.
    */
   public function clearCache(): void {
     Cache::forget('topdesk.locations');
   }
 
   /**
-   * Set cache duration in minutes
+   * Set cache duration in minutes.
    *
    * @param int $minutes
+   *   Duration in minutes to cache API responses.
+   *
    * @return void
+   *   Sets the cache duration for API responses.
    */
   public function setCacheDuration(int $minutes): void {
     $this->cacheMinutes = $minutes;
@@ -179,10 +235,14 @@ class TopDeskService {
    * Create a single asset in TopDesk.
    *
    * @param string $assetName
-   * @return array Asset data with ID
+   *   Name of the asset - e.g. SRJC Tag.
+   *
+   * @return array
+   *   Returns the created asset data including its ID.
+   *
    * @throws Exception
    */
-  public function createAsset(string $srjcTag): array {
+  public function createAsset(array $assetData): array {
     try {
       $response = Http::withBasicAuth($this->username, $this->password)
         ->withHeaders([
@@ -190,14 +250,16 @@ class TopDeskService {
           'Accept' => 'application/json',
         ])->timeout(30)->post($this->baseUrl . '/tas/api/assetmgmt/assets', [
           'type_id' => $this->topDeskTemplateId,
-          'name' => $srjcTag,
+          'name' => $assetData['srjc_tag'],
+          'room' => $assetData['room'] ?? NULL,
         ]);
 
       if ($response->successful()) {
         $asset = $response->json();
         Log::info('TopDesk Asset Created', [
-          'asset_id' => $asset['data']['unid'] ?? null,
-          'name' => $srjcTag,
+          'asset_id' => $asset['data']['unid'] ?? NULL,
+          'name' => $assetData['srjc_tag'],
+          'room' => $assetData['room'] ?? NULL,
         ]);
         return $asset;
       }
@@ -207,18 +269,22 @@ class TopDeskService {
     }
     catch (\Exception $e) {
       Log::error('TopDesk API Error - Create Asset', [
-          'message' => $e->getMessage(),
-          'asset_name' => $srjcTag
+        'message' => $e->getMessage(),
+        'asset_name' => $assetData['srjc_tag'],
       ]);
       throw $e;
     }
   }
 
   /**
-   * Get all assignments for an asset
+   * Get all assignments for an asset.
    *
    * @param string $assetId
+   *   The ID of the asset to retrieve assignments for.
+   *
    * @return array
+   *   Returns array of assignments for the specified asset.
+   *
    * @throws Exception
    */
   public function getAssetAssignments(string $assetId): array {
@@ -238,8 +304,8 @@ class TopDeskService {
     }
     catch (\Exception $e) {
       Log::error('TopDesk API Error - Get Asset Assignments', [
-          'message' => $e->getMessage(),
-          'asset_id' => $assetId
+        'message' => $e->getMessage(),
+        'asset_id' => $assetId,
       ]);
       throw $e;
     }
@@ -249,9 +315,15 @@ class TopDeskService {
    * Unlink an asset from a specific target (like a location)
    *
    * @param string $assetId
-   * @param string $type (e.g., 'location')
+   *   The ID of the asset to unlink.
+   * @param string $type
+   *   The type of target to unlink from (e.g., 'location').
    * @param string $targetId
+   *   The ID of the target to unlink from.
+   *
    * @return bool
+   *   Returns true if unlinking was successful.
+   *
    * @throws Exception
    */
   public function unlinkAssetFromTarget(string $assetId, string $type, string $targetId): bool {
@@ -266,9 +338,9 @@ class TopDeskService {
         Log::info('TopDesk Asset Unlinked', [
           'asset_id' => $assetId,
           'type' => $type,
-          'target_id' => $targetId
+          'target_id' => $targetId,
         ]);
-        return true;
+        return TRUE;
       }
 
       throw new \Exception('Failed to unlink asset from target. Status: ' . $response->status());
@@ -279,17 +351,21 @@ class TopDeskService {
         'message' => $e->getMessage(),
         'asset_id' => $assetId,
         'type' => $type,
-        'target_id' => $targetId
+        'target_id' => $targetId,
       ]);
       throw $e;
     }
   }
 
   /**
-   * Clear all location assignments for an asset
+   * Clear all location assignments for an asset.
    *
    * @param string $assetId
-   * @return int Number of assignments cleared
+   *   The ID of the asset to clear assignments for.
+   *
+   * @return int
+   *   Number of assignments cleared.
+   *
    * @throws Exception
    */
   public function clearAssetLocationAssignments(string $assetId): int {
@@ -303,11 +379,8 @@ class TopDeskService {
           $this->unlinkAssetFromTarget($assetId, 'location', $locationId);
           $clearedCount++;
         }
-
+      }
     }
-    }
-    // Look for location assignments and unlink them
-
 
     if ($clearedCount > 0) {
       Log::info('TopDesk Asset Location Assignments Cleared', [
@@ -323,9 +396,15 @@ class TopDeskService {
    * Assign an asset to a location.
    *
    * @param string $assetId
+   *   The ID of the asset to assign.
    * @param string $branchId
+   *   The ID of the branch (campus) where the location resides.
    * @param string $locationId
+   *   The ID of the location to assign the asset to.
+   *
    * @return bool
+   *   Returns true if assignment was successful.
+   *
    * @throws Exception
    */
   public function assignAssetToLocation(string $assetId, string $branchId, string $locationId): bool {
@@ -338,16 +417,16 @@ class TopDeskService {
           'assetIds' => [$assetId],
           'branchId' => $branchId,
           'linkToId' => $locationId,
-          'linkType' => 'location'
+          'linkType' => 'location',
         ]);
 
       if ($response->successful()) {
         Log::info('TopDesk Asset Assigned', [
           'asset_id' => $assetId,
           'branch_id' => $branchId,
-          'location_id' => $locationId
+          'location_id' => $locationId,
         ]);
-        return true;
+        return TRUE;
       }
 
       throw new \Exception('Failed to assign asset to location. Status: ' . $response->status());
@@ -358,59 +437,60 @@ class TopDeskService {
         'message' => $e->getMessage(),
         'asset_id' => $assetId,
         'branch_id' => $branchId,
-        'location_id' => $locationId
+        'location_id' => $locationId,
       ]);
       throw $e;
     }
   }
 
-  public function createAndAssignAsset(string $srjcTag, string $branchId, string $locationId): array
-{
-    // Search for existing asset
-    $existingAsset = $this->searchAssetsByName($srjcTag);
+  /**
+   * Create or update (if exists) an asset and assign it to a location.
+   */
+  public function createAndAssignAsset(array $assetData): array {
+    $existingAsset = $this->searchAssetsByName($assetData['srjc_tag']);
 
     if ($existingAsset) {
-        // Asset exists - clear existing location assignments first
-        $assetId = $existingAsset['id'];
-        $clearedCount = $this->clearAssetLocationAssignments($assetId);
+      $operation = 'reassigned';
+      // Asset exists - clear existing location assignments first.
+      $assetId = $existingAsset['id'];
+      $clearedCount = $this->clearAssetLocationAssignments($assetId);
+      $this->updateExistingAssetData($assetId, $assetData);
+      Log::info('TopDesk Asset Found - Reassigning Location', [
+        'asset_id' => $assetId,
+        'name' => $assetData['srjc_tag'],
+        'cleared_assignments' => $clearedCount,
+      ]);
 
-        Log::info('TopDesk Asset Found - Reassigning Location', [
-            'asset_id' => $assetId,
-            'name' => $srjcTag,
-            'cleared_assignments' => $clearedCount
-        ]);
-
-        // Assign to new location
-        $this->assignAssetToLocation($assetId, $branchId, $locationId);
-
-        return [
-            'asset' => $existingAsset,
-            'operation' => 'reassigned',
-            'cleared_assignments' => $clearedCount
-        ];
-    } else {
-        // Asset doesn't exist - create new one
-        $asset = $this->createAsset($srjcTag);
-        $assetId = $asset['data']['unid'] ?? null;
-
-        if (!$assetId) {
-            throw new \Exception('Asset creation succeeded but no unid returned');
-        }
-
-        // Assign newly created asset to location
-        $this->assignAssetToLocation($assetId, $branchId, $locationId);
-
-        return [
-            'asset' => $asset,
-            'operation' => 'created'
-        ];
     }
+    else {
+      $operation = 'created';
+      $asset = $this->createAsset($assetData);
+      $assetId = $asset['data']['unid'] ?? NULL;
+
+      if (!$assetId) {
+        throw new \Exception('Asset creation succeeded but no unid returned');
+      }
+
+    }
+    if ($assetId) {
+      $this->assignAssetToLocation($assetId, $assetData['campus'], $assetData['building']);
+    }
+
+    return [
+      'asset' => $assetId,
+      'operation' => $operation,
+    ];
   }
+
   /**
    * Search for assets by name using the filter endpoint.
    *
    * @param string $assetName
+   *   The name of the asset to search for.
+   *
    * @return array|null
+   *   Returns array of matching assets or null if none found.
+   *
    * @throws Exception
    */
   public function searchAssetsByName(string $assetName): array|null {
@@ -427,7 +507,6 @@ class TopDeskService {
       if ($response->successful()) {
         $result = $response->json();
         $dataSet = $result['dataSet'] ?? [];
-        // TopDesk filter endpoint typically returns { "dataSet": [...] }
         return !empty($dataSet) ? $dataSet[0] : NULL;
       }
 
@@ -443,18 +522,60 @@ class TopDeskService {
     }
   }
 
-/**
-     * Search for assets by name and return the first match
-     *
-     * @param string $assetName
-     * @return array|null Asset data or null if not found
-     * @throws Exception
-     */
-    public function findAssetByName(string $assetName): ?array
-    {
-        $existingAssets = $this->searchAssetsByName($assetName);
-        return count($existingAssets) > 0 ? $existingAssets[0] : null;
+  /**
+   * Search for assets by name and return the first match.
+   *
+   * @param string $assetName
+   *   The name of the asset to search for.
+   *
+   * @return array|null
+   *   Returns the first matching asset or null if none found.
+   *
+   * @throws Exception
+   */
+  public function findAssetByName(string $assetName): ?array {
+    $existingAssets = $this->searchAssetsByName($assetName);
+    return count($existingAssets) > 0 ? $existingAssets[0] : NULL;
+  }
+
+  /**
+   * Update existing asset data.
+   *
+   * @param string $assetId
+   *   The ID of the asset to update.
+   * @param array $assetData
+   *   The data to update the asset with.
+   *
+   * @return bool
+   *   Returns true if update was successful.
+   *
+   * @throws Exception
+   */
+  public function updateExistingAssetData(string $assetId, array $assetData): bool {
+    try {
+      $response = Http::withBasicAuth($this->username, $this->password)
+        ->withHeaders([
+          'Content-Type' => 'application/json',
+          'Accept' => 'application/json',
+        ])->timeout(30)->post($this->baseUrl . "/tas/api/assetmgmt/assets/{$assetId}", [
+          'room' => $assetData['room'],
+        ]);
+      if ($response->successful()) {
+        Log::info('TopDesk Asset Updated', [
+          'asset_id' => $assetId,
+          'room' => $assetData['room'],
+        ]);
+        return TRUE;
+      }
+      throw new \Exception('Failed to update asset. Status: ' . $response->status());
     }
+    catch (\Exception $e) {
+      Log::error('TopDesk API Error - Unable to update existing asset', [
+        'message' => $e->getMessage(),
+        'asset_name' => $assetData['srjc_tag'],
+      ]);
+      throw $e;
+    }
+  }
 
 }
-

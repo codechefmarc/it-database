@@ -41,5 +41,6 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth'])->group(function () {
   Route::get('/topdesk/campuses', [TopDeskDataController::class, 'getCampuses']);
   Route::get('/topdesk/buildings', [TopDeskDataController::class, 'getBuildingsByCampus']);
+  Route::get('/topdesk/asset-makes', [TopDeskDataController::class, 'getAssetMakes']);
   Route::post('/topdesk/clear-cache', [TopDeskDataController::class, 'clearCache']);
 });

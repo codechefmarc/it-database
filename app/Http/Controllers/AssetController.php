@@ -26,15 +26,18 @@ class AssetController extends Controller {
     $request->validate([
       'campus' => 'required|string',
       'building' => 'required|string',
+      'room' => 'required|string',
       'srjc_tag' => 'required|string',
     ]);
 
     try {
-      $asset = $this->topDeskService->createAndAssignAsset(
-        $request->input('srjc_tag'),
-        $request->input('campus'),
-        $request->input('building')
-      );
+      $assetData = [
+        'srjc_tag' => $request->input('srjc_tag'),
+        'campus' => $request->input('campus'),
+        'building' => $request->input('building'),
+        'room' => $request->input('room'),
+      ];
+      $asset = $this->topDeskService->createAndAssignAsset($assetData);
 
       return redirect()->back()->with('success', "Asset '{$request->input('srjc_tag')}' created and assigned successfully!");
 

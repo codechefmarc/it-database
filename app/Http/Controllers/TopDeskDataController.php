@@ -83,6 +83,26 @@ class TopDeskDataController extends Controller {
   }
 
   /**
+   * Get all asset makes (for make/model dropdowns)
+   */
+  public function getAssetMakes(): JsonResponse {
+    try {
+      $makes = $this->topDeskService->getAssetMakes();
+
+      return response()->json([
+        'success' => TRUE,
+        'data' => $makes['results'],
+      ]);
+    }
+    catch (\Exception $e) {
+      return response()->json([
+        'success' => FALSE,
+        'message' => 'Failed to load makes',
+      ], 500);
+    }
+  }
+
+  /**
    * Clear the cache (for admin use)
    */
   public function clearCache(): JsonResponse {

@@ -4,6 +4,7 @@ class AssetForm {
   constructor() {
     this.campusSelect = document.getElementById('campus');
     this.buildingSelect = document.getElementById('building');
+    this.makeSelect = document.getElementById('make');
     this.form = document.getElementById('assetForm');
     this.messagesDiv = document.getElementById('form-messages');
 
@@ -12,6 +13,7 @@ class AssetForm {
 
   async init() {
       await this.loadCampuses();
+      await this.loadMakes();
       this.setupEventListeners();
   }
 
@@ -80,6 +82,38 @@ class AssetForm {
     });
   }
 
+  async loadMakes() {
+    try {
+      this.setMakesLoading(true);
+
+      const response = await fetch('/topdesk/asset-makes');
+      const data = await response.json();
+
+      if (data.success) {
+          this.populateMakes(data.data);
+          this.hideError('make-error');
+      } else {
+          this.showError('make-error', 'Failed to load makes');
+      }
+    } catch (error) {
+      console.error('Error loading makes:', error);
+      this.showError('make-error', 'Error loading makes');
+    } finally {
+      this.setMakesLoading(false);
+    }
+  }
+
+  populateMakes(makes) {
+    this.makeSelect.innerHTML = '<option value="">Select a make</option>';
+
+    makes.forEach(make => {
+      const option = document.createElement('option');
+      option.value = make.id;
+      option.textContent = make.name;
+      this.makeSelect.appendChild(option);
+    });
+  }
+
   setupEventListeners() {
     this.campusSelect.addEventListener('change', (e) => {
       const campusId = e.target.value;
@@ -112,6 +146,15 @@ class AssetForm {
     if (loading) {
       this.buildingSelect.innerHTML = '<option value="">Loading buildings...</option>';
       this.buildingSelect.disabled = true;
+    }
+  }
+
+  setMakesLoading(loading) {
+    if (loading) {
+      this.makeSelect.innerHTML = '<option value="">Loading makes...</option>';
+      this.makeSelect.disabled = true;
+    } else {
+      this.makeSelect.disabled = false;
     }
   }
 
