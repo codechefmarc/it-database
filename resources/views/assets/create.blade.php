@@ -75,9 +75,16 @@
     </div>
   </form>
 
-  <!-- Assets Table -->
+  <!-- Form Messages -->
 
   <div id="form-messages" class="mt-6"></div>
+
+  <div id="submit-progress" class="hidden mt-2 w-full bg-gray-400 rounded">
+    <div id="submit-progress-bar" class="bg-blue-600 text-xs text-white text-center rounded h-4 w-0">0%</div>
+  </div>
+
+  <!-- Assets Table -->
+
   <div class="mt-12">
     <div class="flex justify-between items-center mb-4">
       <h3 class="text-lg font-semibold text-gray-800">Assets to Submit</h3>
@@ -110,7 +117,7 @@
         <form id="submitAllForm" method="POST" action="{{ route('assets.store') }}">
           @csrf
           <div class="flex justify-between items-center">
-            <p class="text-sm text-gray-600">Ready to submit <span id="submit-count">0</span> assets to the database?</p>
+            <p class="text-sm text-gray-600">Ready to submit <span id="submit-count">0</span> assets to TOPdesk?</p>
             <button type="submit"
               class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold px-6 py-2 rounded-md transition-colors"
               disabled>
@@ -118,8 +125,8 @@
             </button>
           </div>
         </form>
-        <div id="loading" class="flex justify-end mt-2 hidden">
-          <p>Please wait...</p>
+        <div id="loading" class="hidden flex justify-end mt-2">
+          <p><i class="fa-solid fa-spinner"></i> Please wait, submitting assets</p>
         </div>
       </div>
     </div>
@@ -129,11 +136,4 @@
     </div>
   </div>
 
-  <!-- Data attributes for JavaScript -->
-  <div id="form-data"
-    data-saved-campus="{{ old('campus', session('bulk_scan.campus', '')) }}"
-    data-saved-building="{{ old('building', session('bulk_scan.building', '')) }}"
-    data-saved-make="{{ old('make', session('bulk_scan.make', '')) }}"
-    style="display: none;">
-  </div>
 </x-layout>

@@ -6,6 +6,9 @@ use App\Services\TopDeskService;
 use Illuminate\Http\Request;
 
 class AssetController extends Controller {
+  /**
+   * The TopDesk service instance.
+   */
   private TopDeskService $topDeskService;
 
   public function __construct(TopDeskService $topDeskService) {
@@ -29,16 +32,6 @@ class AssetController extends Controller {
     if (!$assets || !is_array($assets)) {
       return response()->json(['error' => 'Invalid asset data'], 422);
     }
-
-    $lastAsset = end($assets);
-
-    session([
-      'bulk_scan.campus' => $lastAsset['campus'],
-      'bulk_scan.building' => $lastAsset['building'],
-      'bulk_scan.room' => $lastAsset['room'],
-      'bulk_scan.make' => $lastAsset['make'],
-      'bulk_scan.model' => $lastAsset['model'],
-    ]);
 
     $results = [];
 
@@ -66,7 +59,7 @@ class AssetController extends Controller {
       ]);
     }
 
-    // Optional fallback for non-AJAX.
+    // Fallback for non-AJAX.
     return redirect()->back()->with('status', 'Assets processed.');
   }
 

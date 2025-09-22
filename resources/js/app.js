@@ -4,7 +4,9 @@ class AssetForm {
   constructor() {
     this.campusSelect = document.getElementById('campus');
     this.buildingSelect = document.getElementById('building');
+    this.roomInput = document.getElementById('room');
     this.makeSelect = document.getElementById('make');
+    this.modelInput = document.getElementById('model');
     this.addToListForm = document.getElementById('addToListForm');
     this.submitAllForm = document.getElementById('submitAllForm');
     this.messagesDiv = document.getElementById('form-messages');
@@ -31,13 +33,22 @@ class AssetForm {
   }
 
   getSavedValues() {
-    if (!this.formData) return {};
+    const saved = localStorage.getItem('bulk_scan_last');
+    if (!saved) return {};
 
-    return {
-      campus: this.formData.dataset.savedCampus || '',
-      building: this.formData.dataset.savedBuilding || '',
-      make: this.formData.dataset.savedMake || ''
-    };
+    try {
+      const parsed = JSON.parse(saved);
+      return {
+        campus: parsed.campus || '',
+        building: parsed.building || '',
+        room: parsed.room || '',
+        make: parsed.make || '',
+        model: parsed.model || ''
+      };
+    } catch (e) {
+      console.error('Failed to parse saved bulk scan values', e);
+      return {};
+    }
   }
 
   async init() {
@@ -53,28 +64,29 @@ class AssetForm {
   }
 
   async restoreSavedValues() {
+    const saved = this.getSavedValues();
     // Restore campus first
-    if (this.savedValues.campus) {
-      this.campusSelect.value = this.savedValues.campus;
+    if (saved.campus) {
+      this.campusSelect.value = saved.campus;
       this.campusSelect.dispatchEvent(new Event('change'));
     }
 
-    // Wait for buildings to load if campus was restored
-    if (this.savedValues.campus && this.savedValues.building) {
-      // Wait a bit for buildings to load, then restore building
+    // Restore building after a short delay to wait for buildings to load
+    if (saved.building) {
       setTimeout(() => {
-        if (this.savedValues.building) {
-          this.buildingSelect.value = this.savedValues.building;
-          this.buildingSelect.dispatchEvent(new Event('change'));
-        }
+        this.buildingSelect.value = saved.building;
+        this.buildingSelect.dispatchEvent(new Event('change'));
       }, 100);
     }
 
     // Restore make
-    if (this.savedValues.make) {
-      this.makeSelect.value = this.savedValues.make;
+    if (saved.make) {
+      this.makeSelect.value = saved.make;
       this.makeSelect.dispatchEvent(new Event('change'));
     }
+
+    if (saved.room) this.roomInput.value = saved.room;
+    if (saved.model) this.modelInput.value = saved.model;
   }
 
   async loadCampuses() {
@@ -339,6 +351,15 @@ class AssetForm {
     existingAssets.push(asset);
     this.saveAssetsToStorage(existingAssets);
 
+    // Save last submitted values for form restoration
+    localStorage.setItem('bulk_scan_last', JSON.stringify({
+      campus: asset.campus,
+      building: asset.building,
+      room: asset.room,
+      make: asset.make,
+      model: asset.model
+    }));
+
     // Clear only the non-persistent fields
     document.getElementById('srjc_tag').value = '';
     document.getElementById('serial_number').value = '';
@@ -406,50 +427,65 @@ class AssetForm {
     }
   }
 
-  handleSubmitAll() {
+  async handleSubmitAll() {
     const assets = this.getAssetsFromStorage();
-    const formData = new FormData(this.submitAllForm);
-    formData.append('assets', JSON.stringify(assets));
 
     if (assets.length === 0) {
       this.showMessage('No assets to submit', 'error');
       return;
     }
 
-    // For now, just log what would be submitted
-    console.log('Would submit these assets:', assets);
-    this.showMessage(`Would submit ${assets.length} assets to database`, 'info');
-
     this.loadingDiv.classList.remove('hidden');
+    this.submitAllButton.disabled = true;
 
-    fetch(this.submitAllForm.action, {
-      method: 'POST',
-      headers: {
-        'X-CSRF-TOKEN': document.querySelector('input[name=_token]').value,
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      body: formData
-    })
-    .then((response) => response.json())
-    .then((data) => {
-      console.log('Saved:', data); // now you see each asset's success/error
+    // Show progress bar
+    const progressContainer = document.getElementById('submit-progress');
+    const progressBar = document.getElementById('submit-progress-bar');
+    progressContainer.classList.remove('hidden');
+    progressBar.style.width = '0%';
+    progressBar.textContent = '0%';
 
-      // Clear storage, reset form, refocus tag input
-      localStorage.removeItem(this.storageKey);
-      this.submitAllForm.reset();
-      document.getElementById('srjc_tag').focus();
-    })
-    .catch((error) => {
-      console.error('Error:', error);
-      alert('Something went wrong. Please try again.');
-    })
-    .finally(() => {
-      // Hide spinner
-      this.loadingDiv.classList.add('hidden');
-      this.updateAssetsTable([]);
-      this.showMessage('All assets submitted successfully!', 'success');
-    });
+    const results = [];
+    for (let i = 0; i < assets.length; i++) {
+      const asset = assets[i];
+      try {
+        const formData = new FormData(this.submitAllForm);
+        formData.append('assets', JSON.stringify([asset])); // send single asset
 
+        const response = await fetch(this.submitAllForm.action, {
+          method: 'POST',
+          headers: {
+            'X-CSRF-TOKEN': document.querySelector('input[name=_token]').value,
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: formData
+        });
+
+        const data = await response.json();
+        results.push({ asset: asset.srjc_tag, success: true, data });
+      } catch (error) {
+        console.error('Error submitting asset', asset, error);
+        results.push({ asset: asset.srjc_tag, success: false, error: error.message });
+      }
+
+      // Update progress
+      const percent = Math.round(((i + 1) / assets.length) * 100);
+      progressBar.style.width = `${percent}%`;
+      progressBar.textContent = `${i + 1} / ${assets.length}`;
+    }
+
+    // Done
+    localStorage.removeItem(this.storageKey);
+    this.updateAssetsTable([]);
+    this.submitAllForm.reset();
+    document.getElementById('srjc_tag').focus();
+    this.showMessage('All assets submitted!', 'success');
+
+    progressContainer.classList.add('hidden');
+    this.loadingDiv.classList.add('hidden');
+    this.submitAllButton.disabled = false;
+
+    //console.log('Submission results:', results);
   }
 
   handleSubmit() {
