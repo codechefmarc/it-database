@@ -252,6 +252,9 @@ class TopDeskService {
           'type_id' => $this->topDeskTemplateId,
           'name' => $assetData['srjc_tag'],
           'room' => $assetData['room'] ?? NULL,
+          'make' => $assetData['make'] ?? NULL,
+          'model' => $assetData['model'] ?? NULL,
+          'serial-number' => $assetData['serial_number'] ?? NULL,
         ]);
 
       if ($response->successful()) {
@@ -559,6 +562,9 @@ class TopDeskService {
           'Accept' => 'application/json',
         ])->timeout(30)->post($this->baseUrl . "/tas/api/assetmgmt/assets/{$assetId}", [
           'room' => $assetData['room'],
+          'make' => $assetData['make'] ?? NULL,
+          'model' => $assetData['model'] ?? NULL,
+          'serial-number' => $assetData['serial_number'] ?? NULL,
         ]);
       if ($response->successful()) {
         Log::info('TopDesk Asset Updated', [

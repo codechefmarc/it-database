@@ -23,30 +23,51 @@ class AssetController extends Controller {
    * Create and assign an asset.
    */
   public function store(Request $request) {
-    $request->validate([
-      'campus' => 'required|string',
-      'building' => 'required|string',
-      'room' => 'required|string',
-      'srjc_tag' => 'required|string',
+    $jsonAssets = $request->input('assets');
+    $assets = json_decode($jsonAssets, TRUE);
+
+    if (!$assets || !is_array($assets)) {
+      return response()->json(['error' => 'Invalid asset data'], 422);
+    }
+
+    $lastAsset = end($assets);
+
+    session([
+      'bulk_scan.campus' => $lastAsset['campus'],
+      'bulk_scan.building' => $lastAsset['building'],
+      'bulk_scan.room' => $lastAsset['room'],
+      'bulk_scan.make' => $lastAsset['make'],
+      'bulk_scan.model' => $lastAsset['model'],
     ]);
 
-    try {
-      $assetData = [
-        'srjc_tag' => $request->input('srjc_tag'),
-        'campus' => $request->input('campus'),
-        'building' => $request->input('building'),
-        'room' => $request->input('room'),
-      ];
-      $asset = $this->topDeskService->createAndAssignAsset($assetData);
+    $results = [];
 
-      return redirect()->back()->with('success', "Asset '{$request->input('srjc_tag')}' created and assigned successfully!");
+    foreach ($assets as $assetData) {
+      try {
+        $asset = $this->topDeskService->createAndAssignAsset($assetData);
+        $results[] = [
+          'asset' => $assetData['srjc_tag'] ?? NULL,
+          'success' => TRUE,
+        ];
+      }
+      catch (\Exception $e) {
+        $results[] = [
+          'asset' => $assetData['srjc_tag'] ?? NULL,
+          'success' => FALSE,
+          'error' => $e->getMessage(),
+        ];
+      }
+    }
 
+    if ($request->ajax()) {
+      return response()->json([
+        'success' => TRUE,
+        'results' => $results,
+      ]);
     }
-    catch (\Exception $e) {
-      return redirect()->back()
-        ->with('error', 'Failed to create asset: ' . $e->getMessage())
-        ->withInput();
-    }
+
+    // Optional fallback for non-AJAX.
+    return redirect()->back()->with('status', 'Assets processed.');
   }
 
 }
