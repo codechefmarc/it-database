@@ -93,7 +93,7 @@ class AssetForm {
     try {
       this.setCampusLoading(true);
 
-      const response = await fetch('/topdesk/campuses');
+      const response = await fetch(window.apiRoutes.campuses);
       const data = await response.json();
 
       if (data.success) {
@@ -130,7 +130,7 @@ class AssetForm {
       try {
         this.setBuildingLoading(true);
 
-        const response = await fetch(`/topdesk/buildings?campus_id=${campusId}`);
+        const response = await fetch(`${window.apiRoutes.buildings}?campus_id=${campusId}`);
         const data = await response.json();
 
         if (data.success) {
@@ -168,7 +168,7 @@ class AssetForm {
     try {
       this.setMakesLoading(true);
 
-      const response = await fetch('/topdesk/asset-makes');
+      const response = await fetch(window.apiRoutes.assetMakes);
       const data = await response.json();
 
       if (data.success) {

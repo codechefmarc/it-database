@@ -98,5 +98,12 @@
             <div class="h-14.5 hidden lg:block"></div>
         @endif
 
+    <script>
+      // Set the APIs routes.
+      window.apiRoutes.campuses = '{{ route("getCampuses") }}';
+      window.apiRoutes.buildings = '{{ route("getBuildings") }}';
+      window.apiRoutes.assetMakes = '{{ route("getAssetMakes") }}';
+    </script>
+
   </body>
 </html>
