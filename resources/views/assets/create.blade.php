@@ -3,6 +3,10 @@
     Bulk Scan Assets
   </x-slot:heading>
 
+  <div class="mb-8">
+    <p class="text-sm text-gray-700">Note: If an asset already exists in TOPdesk with the same SRJC Tag, all information here will override any existing information in TOPdesk.</p>
+  </div>
+
   <!-- First Form: Add to Local Storage -->
   <form id="addToListForm">
     @csrf

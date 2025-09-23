@@ -234,8 +234,8 @@ class TopDeskService {
   /**
    * Create a single asset in TopDesk.
    *
-   * @param string $assetName
-   *   Name of the asset - e.g. SRJC Tag.
+   * @param string $assetData
+   *   Asset data passed from the form.
    *
    * @return array
    *   Returns the created asset data including its ID.
@@ -452,10 +452,11 @@ class TopDeskService {
   public function createAndAssignAsset(array $assetData): array {
     $existingAsset = $this->searchAssetsByName($assetData['srjc_tag']);
 
+    $assetData['notes'] = $existingAsset['notes'] ?? '';
     if ($existingAsset) {
       $operation = 'reassigned';
       // Asset exists - clear existing location assignments first.
-      $assetId = $existingAsset['id'];
+      $assetId = $existingAsset['unid'];
       $clearedCount = $this->clearAssetLocationAssignments($assetId);
       $this->updateExistingAssetData($assetId, $assetData);
       Log::info('TopDesk Asset Found - Reassigning Location', [
@@ -505,6 +506,7 @@ class TopDeskService {
         ])->timeout(30)->post($this->baseUrl . '/tas/api/assetmgmt/assets/filter', [
           'templateId' => [$this->topDeskTemplateId],
           '$filter' => "name eq '{$assetName}'",
+          'fields' => "notes",
         ]);
 
       if ($response->successful()) {
@@ -523,22 +525,6 @@ class TopDeskService {
       ]);
       throw $e;
     }
-  }
-
-  /**
-   * Search for assets by name and return the first match.
-   *
-   * @param string $assetName
-   *   The name of the asset to search for.
-   *
-   * @return array|null
-   *   Returns the first matching asset or null if none found.
-   *
-   * @throws Exception
-   */
-  public function findAssetByName(string $assetName): ?array {
-    $existingAssets = $this->searchAssetsByName($assetName);
-    return count($existingAssets) > 0 ? $existingAssets[0] : NULL;
   }
 
   /**
@@ -565,11 +551,13 @@ class TopDeskService {
           'make' => $assetData['make'] ?? NULL,
           'model' => $assetData['model'] ?? NULL,
           'serial-number' => $assetData['serial_number'] ?? NULL,
+          'notes' => $assetData['notes'] . "\nUpdated by IT database web app on " . date('Y-m-d H:i:s'),
         ]);
       if ($response->successful()) {
         Log::info('TopDesk Asset Updated', [
           'asset_id' => $assetId,
           'room' => $assetData['room'],
+          'notes' => $assetData['notes'],
         ]);
         return TRUE;
       }
