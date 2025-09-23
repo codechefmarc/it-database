@@ -99,10 +99,11 @@
         @endif
 
     <script>
-      // Set the APIs routes.
-      window.apiRoutes.campuses = '{{ route("getCampuses") }}';
-      window.apiRoutes.buildings = '{{ route("getBuildings") }}';
-      window.apiRoutes.assetMakes = '{{ route("getAssetMakes") }}';
+      window.apiRoutes = {
+        campuses: '{{ route("getCampuses") }}',
+        buildings: '{{ route("getBuildings") }}',
+        assetMakes: '{{ route("getAssetMakes") }}'
+      };
     </script>
 
   </body>
