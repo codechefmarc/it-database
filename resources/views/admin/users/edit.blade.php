@@ -79,7 +79,7 @@
           </div>
         </div>
 
-        @if($user->isAdmin())
+        @if(Auth::user()->isAdmin())
 
         <!-- Role -->
         <div class="">

@@ -81,7 +81,7 @@ class UserController extends Controller {
       $rules['password'] = 'required|string|min:8|confirmed';
     }
 
-    if (Auth::user()->is_admin) {
+    if (Auth::user()->isAdmin()) {
       $rules['role_id'] = 'required|exists:roles,id';
     }
 
@@ -98,14 +98,14 @@ class UserController extends Controller {
       $updateData['password'] = Hash::make($request->password);
     }
 
-    if (Auth::user()->is_admin) {
+    if (Auth::user()->isAdmin()) {
       $updateData['role_id'] = $request->role_id;
     }
 
     $user->update($updateData);
 
     // Different redirects based on who's updating.
-    if (Auth::user()->is_admin && Auth::id() !== $user->id) {
+    if (Auth::user()->isAdmin() && Auth::id() !== $user->id) {
       return redirect()->route('admin.users.index')->with('success', 'User updated successfully!');
     }
     else {
