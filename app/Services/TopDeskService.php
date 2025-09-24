@@ -255,15 +255,18 @@ class TopDeskService {
           'make' => $assetData['make'] ?? NULL,
           'model' => $assetData['model'] ?? NULL,
           'serial-number' => $assetData['serial_number'] ?? NULL,
+          'notes' => $assetData['notes'] . "Added by IT database web app on " . date('Y-m-d H:i:s'),
         ]);
 
       if ($response->successful()) {
         $asset = $response->json();
-        Log::info('TopDesk Asset Created', [
-          'asset_id' => $asset['data']['unid'] ?? NULL,
-          'name' => $assetData['srjc_tag'],
-          'room' => $assetData['room'] ?? NULL,
-        ]);
+        if (env('APP_DEBUG')) {
+          Log::info('TopDesk Asset Created', [
+            'asset_id' => $asset['data']['unid'] ?? NULL,
+            'name' => $assetData['srjc_tag'],
+            'room' => $assetData['room'] ?? NULL,
+          ]);
+        }
         return $asset;
       }
 
@@ -338,11 +341,13 @@ class TopDeskService {
         ])->timeout(30)->delete($this->baseUrl . "/tas/api/assetmgmt/assets/{$assetId}/assignments/{$targetId}");
 
       if ($response->successful()) {
-        Log::info('TopDesk Asset Unlinked', [
-          'asset_id' => $assetId,
-          'type' => $type,
-          'target_id' => $targetId,
-        ]);
+        if (env('APP_DEBUG')) {
+          Log::info('TopDesk Asset Unlinked', [
+            'asset_id' => $assetId,
+            'type' => $type,
+            'target_id' => $targetId,
+          ]);
+        }
         return TRUE;
       }
 
@@ -386,10 +391,12 @@ class TopDeskService {
     }
 
     if ($clearedCount > 0) {
-      Log::info('TopDesk Asset Location Assignments Cleared', [
-        'asset_id' => $assetId,
-        'cleared_count' => $clearedCount,
-      ]);
+      if (env('APP_DEBUG')) {
+        Log::info('TopDesk Asset Location Assignments Cleared', [
+          'asset_id' => $assetId,
+          'cleared_count' => $clearedCount,
+        ]);
+      }
     }
 
     return $clearedCount;
@@ -424,11 +431,13 @@ class TopDeskService {
         ]);
 
       if ($response->successful()) {
-        Log::info('TopDesk Asset Assigned', [
-          'asset_id' => $assetId,
-          'branch_id' => $branchId,
-          'location_id' => $locationId,
-        ]);
+        if (env('APP_DEBUG')) {
+          Log::info('TopDesk Asset Assigned', [
+            'asset_id' => $assetId,
+            'branch_id' => $branchId,
+            'location_id' => $locationId,
+          ]);
+        }
         return TRUE;
       }
 
@@ -459,11 +468,13 @@ class TopDeskService {
       $assetId = $existingAsset['unid'];
       $clearedCount = $this->clearAssetLocationAssignments($assetId);
       $this->updateExistingAssetData($assetId, $assetData);
-      Log::info('TopDesk Asset Found - Reassigning Location', [
-        'asset_id' => $assetId,
-        'name' => $assetData['srjc_tag'],
-        'cleared_assignments' => $clearedCount,
-      ]);
+      if (env('APP_DEBUG')) {
+        Log::info('TopDesk Asset Found - Reassigning Location', [
+          'asset_id' => $assetId,
+          'name' => $assetData['srjc_tag'],
+          'cleared_assignments' => $clearedCount,
+        ]);
+      }
 
     }
     else {
@@ -554,11 +565,13 @@ class TopDeskService {
           'notes' => $assetData['notes'] . "\nUpdated by IT database web app on " . date('Y-m-d H:i:s'),
         ]);
       if ($response->successful()) {
-        Log::info('TopDesk Asset Updated', [
-          'asset_id' => $assetId,
-          'room' => $assetData['room'],
-          'notes' => $assetData['notes'],
-        ]);
+        if (env('APP_DEBUG')) {
+          Log::info('TopDesk Asset Updated', [
+            'asset_id' => $assetId,
+            'room' => $assetData['room'],
+            'notes' => $assetData['notes'],
+          ]);
+        }
         return TRUE;
       }
       throw new \Exception('Failed to update asset. Status: ' . $response->status());
