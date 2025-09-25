@@ -30,6 +30,15 @@ class TopDeskService {
    * TopDesk asset template ID. Default is "Computer".
    */
   private string $topDeskTemplateId = "A273AF5F-0881-4ABB-A66A-E3307631BF46";
+  /**
+   * Allowed templates for asset creation.
+   *
+   * @var array
+   */
+  public array $allowedTemplates = [
+    "Desktop",
+    "Laptop",
+  ];
 
   public function __construct() {
     $this->baseUrl = rtrim(config('services.topdesk.base_url'), '/');
@@ -209,6 +218,33 @@ class TopDeskService {
   }
 
   /**
+   * Get asset templates.
+   */
+  public function getTemplates(): array {
+    return Cache::remember('topdesk.templates', $this->cacheMinutes * 60, function () {
+      try {
+        $response = Http::withBasicAuth($this->username, $this->password)
+          ->withHeaders([
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+          ])->timeout(30)->get($this->baseUrl . '/tas/api/assetmgmt/templates');
+        if ($response->successful()) {
+            return $response->json();
+        }
+
+        throw new \Exception('Failed to fetch templates from TopDesk API. Status: ' . $response->status());
+
+      }
+      catch (\Exception $e) {
+        Log::error('TopDesk API Error - Get Make', [
+          'message' => $e->getMessage(),
+        ]);
+        throw $e;
+      }
+    });
+  }
+
+  /**
    * Clear the locations cache.
    *
    * @return void
@@ -216,6 +252,8 @@ class TopDeskService {
    */
   public function clearCache(): void {
     Cache::forget('topdesk.locations');
+    Cache::forget('topdesk.make');
+    Cache::forget('topdesk.templates');
   }
 
   /**

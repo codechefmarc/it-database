@@ -102,7 +102,8 @@
       window.apiRoutes = {
         campuses: '{{ route("getCampuses") }}',
         buildings: '{{ route("getBuildings") }}',
-        assetMakes: '{{ route("getAssetMakes") }}'
+        assetMakes: '{{ route("getAssetMakes") }}',
+        templates: '{{ route("getTemplates") }}',
       };
     </script>
 

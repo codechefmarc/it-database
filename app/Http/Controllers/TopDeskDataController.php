@@ -103,6 +103,31 @@ class TopDeskDataController extends Controller {
   }
 
   /**
+   * Get all asset templates.
+   */
+  public function getTemplates(): JsonResponse {
+    try {
+      $templates = $this->topDeskService->getTemplates();
+
+      // Filter to only allowed templates.
+      $templates['dataSet'] = array_filter($templates['dataSet'], function ($template) {
+        return in_array($template['text'], $this->topDeskService->allowedTemplates);
+      });
+
+      return response()->json([
+        'success' => TRUE,
+        'data' => array_values($templates['dataSet']),
+      ]);
+    }
+    catch (\Exception $e) {
+      return response()->json([
+        'success' => FALSE,
+        'message' => 'Failed to load templates',
+      ], 500);
+    }
+  }
+
+  /**
    * Clear the cache (for admin use)
    */
   public function clearCache(): JsonResponse {

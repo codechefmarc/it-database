@@ -10,7 +10,35 @@
   <!-- First Form: Add to Local Storage -->
   <form id="addToListForm">
     @csrf
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-baseline">
+      <div class="space-y-2">
+        <label for="template" class="block text-sm font-semibold text-gray-700">Template</label>
+        <select id="template" name="template" required
+          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-900 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed">
+          <option value="">Loading templates...</option>
+        </select>
+        <div id="template-error" class="hidden text-sm text-red-600"></div>
+      </div>
+
+      <div class="space-y-2">
+        <label for="make" class="block text-sm font-semibold text-gray-700">Make *</label>
+        <select id="make" name="make" required
+          class="w-full px-3 h-10 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-900 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed">
+          <option value="">Loading asset makes...</option>
+        </select>
+        <div id="make-error" class="hidden text-sm text-red-600"></div>
+      </div>
+
+      <div class="space-y-2">
+        <label for="model" class="block text-sm font-semibold text-gray-700">Model</label>
+        <input type="text" id="model" name="model" required
+          value="{{ old('model', session('bulk_scan.model', '')) }}"
+          class="bg-white w-full px-3 h-10 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+      </div>
+    </div>
+
+    <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
       <div class="space-y-2">
         <label for="campus" class="block text-sm font-semibold text-gray-700">Campus *</label>
         <select id="campus" name="campus" required
@@ -33,37 +61,21 @@
         <label for="room" class="block text-sm font-semibold text-gray-700">Room</label>
         <input type="text" id="room" name="room" required
           value="{{ old('room', session('bulk_scan.room', '')) }}"
-          class="bg-white w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+          class="bg-white w-full px-3 h-10 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
       </div>
     </div>
 
-    <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-6 items-baseline">
+
+
+    <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 items-baseline">
       <div class="space-y-2">
-        <label for="make" class="block text-sm font-semibold text-gray-700">Make *</label>
-        <select id="make" name="make" required
-          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-900 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed">
-          <option value="">Loading asset makes...</option>
-        </select>
-        <div id="make-error" class="hidden text-sm text-red-600"></div>
-      </div>
-
-      <div class="space-y-2 mt-6">
-        <label for="model" class="block text-sm font-semibold text-gray-700">Model</label>
-        <input type="text" id="model" name="model" required
-          value="{{ old('model', session('bulk_scan.model', '')) }}"
-          class="bg-white w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-      </div>
-    </div>
-
-    <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-6 items-baseline">
-      <div class="space-y-2 mt-6">
         <label for="srjc_tag" class="block text-sm font-semibold text-gray-700">SRJC Tag</label>
         <input type="text" id="srjc_tag" name="srjc_tag" required autofocus
           value="{{ old('srjc_tag') }}"
           class="bg-white w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
       </div>
 
-      <div class="space-y-2 mt-6">
+      <div class="space-y-2">
         <label for="serial_number" class="block text-sm font-semibold text-gray-700">Serial Number</label>
         <input type="text" id="serial_number" name="serial_number" required
           value="{{ old('serial_number') }}"
@@ -81,7 +93,7 @@
 
   <!-- Form Messages -->
 
-  <div id="form-messages" class="mt-6"></div>
+  <div id="form-messages" class="mt-3"></div>
 
   <div id="submit-progress" class="hidden mt-2 w-full bg-gray-400 rounded">
     <div id="submit-progress-bar" class="bg-blue-600 text-xs text-white text-center rounded h-4 w-0">0%</div>
@@ -100,6 +112,7 @@
         <table class="min-w-full bg-white">
           <thead class="bg-gray-50">
             <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Template</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campus</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Building</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>

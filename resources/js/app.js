@@ -7,6 +7,7 @@ class AssetForm {
     this.roomInput = document.getElementById('room');
     this.makeSelect = document.getElementById('make');
     this.modelInput = document.getElementById('model');
+    this.templateSelect = document.getElementById('template');
     this.addToListForm = document.getElementById('addToListForm');
     this.submitAllForm = document.getElementById('submitAllForm');
     this.messagesDiv = document.getElementById('form-messages');
@@ -39,6 +40,7 @@ class AssetForm {
     try {
       const parsed = JSON.parse(saved);
       return {
+        template: parsed.template || '',
         campus: parsed.campus || '',
         building: parsed.building || '',
         room: parsed.room || '',
@@ -52,19 +54,27 @@ class AssetForm {
   }
 
   async init() {
-      await this.loadCampuses();
-      await this.loadMakes();
-      this.setupEventListeners();
+    await this.loadTemplates();
+    await this.loadCampuses();
+    await this.loadMakes();
+    this.setupEventListeners();
 
-      // Restore saved values after everything is loaded
-      this.restoreSavedValues();
+    // Restore saved values after everything is loaded
+    this.restoreSavedValues();
 
-      // Load and display existing assets from local storage
-      this.loadAssetsFromStorage();
+    // Load and display existing assets from local storage
+    this.loadAssetsFromStorage();
   }
 
   async restoreSavedValues() {
     const saved = this.getSavedValues();
+
+    // Restore template
+    if (saved.template) {
+      this.templateSelect.value = saved.template;
+      this.templateSelect.dispatchEvent(new Event('change'));
+    }
+
     // Restore campus first
     if (saved.campus) {
       this.campusSelect.value = saved.campus;
@@ -201,6 +211,42 @@ class AssetForm {
     }
   }
 
+  async loadTemplates() {
+    try {
+      this.setTemplatesLoading(true);
+
+      const response = await fetch(window.apiRoutes.templates);
+      const data = await response.json();
+      if (data.success) {
+          this.populateTemplates(data.data);
+          this.hideError('template-error');
+      } else {
+          this.showError('template-error', 'Failed to load templates');
+      }
+    } catch (error) {
+      console.error('Error loading templates:', error);
+      this.showError('template-error', 'Error loading templates');
+    } finally {
+      this.setTemplatesLoading(false);
+    }
+  }
+
+  populateTemplates(templates) {
+    this.templateSelect.innerHTML = '<option value="">Select a template</option>';
+
+    templates.forEach(template => {
+      const option = document.createElement('option');
+      option.value = template.id;
+      option.textContent = template.text;
+      this.templateSelect.appendChild(option);
+    });
+
+    // Restore saved template value after populating
+    if (this.savedValues.template) {
+      this.templateSelect.value = this.savedValues.template;
+    }
+  }
+
   setupEventListeners() {
     this.srjcTagInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
@@ -263,6 +309,15 @@ class AssetForm {
     }
   }
 
+  setTemplatesLoading(loading) {
+    if (loading) {
+      this.templateSelect.innerHTML = '<option value="">Loading templates...</option>';
+      this.templateSelect.disabled = true;
+    } else {
+      this.templateSelect.disabled = false;
+    }
+  }
+
   showError(elementId, message) {
     const errorDiv = document.getElementById(elementId);
     errorDiv.textContent = message;
@@ -308,7 +363,7 @@ class AssetForm {
     const formData = new FormData(this.addToListForm);
 
     // Validate required fields
-    const requiredFields = ['campus', 'building', 'room', 'make', 'model', 'srjc_tag', 'serial_number'];
+    const requiredFields = ['template', 'campus', 'building', 'room', 'make', 'model', 'srjc_tag', 'serial_number'];
     const missingFields = [];
 
     requiredFields.forEach(field => {
@@ -325,6 +380,8 @@ class AssetForm {
     // Create asset object
     const asset = {
       id: Date.now(), // Simple unique ID
+      template: formData.get('template'),
+      templateName: this.getSelectText(this.templateSelect),
       campus: formData.get('campus'),
       campusName: this.getSelectText(this.campusSelect),
       building: formData.get('building'),
@@ -353,6 +410,7 @@ class AssetForm {
 
     // Save last submitted values for form restoration
     localStorage.setItem('bulk_scan_last', JSON.stringify({
+      template: asset.template,
       campus: asset.campus,
       building: asset.building,
       room: asset.room,
@@ -397,6 +455,7 @@ class AssetForm {
     // Update table body
     this.assetsTableBody.innerHTML = assets.map(asset => `
       <tr class="hover:bg-gray-50">
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.templateName}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.campusName}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.buildingName}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.room}</td>
@@ -486,20 +545,6 @@ class AssetForm {
     this.submitAllButton.disabled = false;
 
     //console.log('Submission results:', results);
-  }
-
-  handleSubmit() {
-    const formData = new FormData(this.form);
-    const data = {
-      campus: formData.get('campus'),
-      building: formData.get('building'),
-      assetName: formData.get('assetName')
-    };
-
-    // For now, just show what would be submitted
-    this.showMessage(`Form data: Campus ID: ${data.campus}, Building ID: ${data.building}, Asset Name: ${data.assetName}`, 'success');
-
-    console.log('Form submission data:', data);
   }
 }
 
