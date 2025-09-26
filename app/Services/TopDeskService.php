@@ -2,8 +2,9 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
+use App\Http\Controllers\TopDeskDataController;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -287,7 +288,7 @@ class TopDeskService {
           'Content-Type' => 'application/json',
           'Accept' => 'application/json',
         ])->timeout(30)->post($this->baseUrl . '/tas/api/assetmgmt/assets', [
-          'type_id' => $this->topDeskTemplateId,
+          'type_id' => $assetData['template'],
           'name' => $assetData['srjc_tag'],
           'room' => $assetData['room'] ?? NULL,
           'make' => $assetData['make'] ?? NULL,
@@ -501,6 +502,11 @@ class TopDeskService {
 
     $assetData['notes'] = $existingAsset['notes'] ?? '';
     if ($existingAsset) {
+      if (in_array($existingAsset['template_name'], $this->allowedTemplates, TRUE) === FALSE) {
+        $message = 'Asset with name "' . $assetData['srjc_tag'] . '" already exists but has an invalid template: ' . ($existingAsset['template_name'] ?? 'unknown');
+        Log::info($message);
+        throw new \Exception($message);
+      }
       $operation = 'reassigned';
       // Asset exists - clear existing location assignments first.
       $assetId = $existingAsset['unid'];
@@ -547,21 +553,34 @@ class TopDeskService {
    * @throws Exception
    */
   public function searchAssetsByName(string $assetName): array|null {
+
+    $controller = new TopDeskDataController($this);
+    $templatesResponse = $controller->getTemplates(FALSE);
+    $templates = json_decode($templatesResponse->getContent(), TRUE);
+    $templateIds = array_column($templates['data'], 'id');
+
     try {
       $response = Http::withBasicAuth($this->username, $this->password)
         ->withHeaders([
           'Content-Type' => 'application/json',
           'Accept' => 'application/json',
         ])->timeout(30)->post($this->baseUrl . '/tas/api/assetmgmt/assets/filter', [
-          'templateId' => [$this->topDeskTemplateId],
+          'templateId' => $templateIds,
           '$filter' => "name eq '{$assetName}'",
           'fields' => "notes",
+          'includeTemplates' => 'relevant',
         ]);
 
       if ($response->successful()) {
         $result = $response->json();
         $dataSet = $result['dataSet'] ?? [];
-        return !empty($dataSet) ? $dataSet[0] : NULL;
+        if (!empty($dataSet)) {
+          $assetData = $dataSet[0];
+          $assetData['template'] = $result['templates'][0]['id'] ?? NULL;
+          $assetData['template_name'] = $result['templates'][0]['text'] ?? NULL;
+          return $assetData;
+        }
+        return NULL;
       }
 
       throw new \Exception('Failed to search for assets in TopDesk API. Status: ' . $response->status());

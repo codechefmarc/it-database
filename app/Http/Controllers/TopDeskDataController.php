@@ -105,15 +105,16 @@ class TopDeskDataController extends Controller {
   /**
    * Get all asset templates.
    */
-  public function getTemplates(): JsonResponse {
+  public function getTemplates($filtered = TRUE): JsonResponse {
     try {
       $templates = $this->topDeskService->getTemplates();
 
       // Filter to only allowed templates.
-      $templates['dataSet'] = array_filter($templates['dataSet'], function ($template) {
-        return in_array($template['text'], $this->topDeskService->allowedTemplates);
-      });
-
+      if ($filtered) {
+        $templates['dataSet'] = array_filter($templates['dataSet'], function ($template) {
+          return in_array($template['text'], $this->topDeskService->allowedTemplates);
+        });
+      }
       return response()->json([
         'success' => TRUE,
         'data' => array_values($templates['dataSet']),
@@ -123,6 +124,34 @@ class TopDeskDataController extends Controller {
       return response()->json([
         'success' => FALSE,
         'message' => 'Failed to load templates',
+      ], 500);
+    }
+  }
+
+  /**
+   * Search assets by name for JS (for checking on correct template).
+   */
+  public function searchAssets(Request $request): JsonResponse {
+    $name = $request->get('name');
+    if (!$name) {
+      return response()->json([
+        'success' => FALSE,
+        'message' => 'Asset name is required',
+      ], 400);
+    }
+
+    try {
+      $assets = $this->topDeskService->searchAssetsByName($name);
+
+      return response()->json([
+        'success' => TRUE,
+        'data' => $assets,
+      ]);
+    }
+    catch (\Exception $e) {
+      return response()->json([
+        'success' => FALSE,
+        'message' => 'Failed to search assets',
       ], 500);
     }
   }

@@ -104,6 +104,7 @@
         buildings: '{{ route("getBuildings") }}',
         assetMakes: '{{ route("getAssetMakes") }}',
         templates: '{{ route("getTemplates") }}',
+        searchAssets: '{{ route("searchAssets") }}',
       };
     </script>
 

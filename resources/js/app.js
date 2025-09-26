@@ -15,6 +15,7 @@ class AssetForm {
     this.srjcTagInput = document.getElementById('srjc_tag');
     this.serialNumberInput = document.getElementById('serial_number');
     this.loadingDiv = document.getElementById('loading');
+    this.templates = [];
 
     // Table elements
     this.assetsTableContainer = document.getElementById('assets-table-container');
@@ -218,7 +219,8 @@ class AssetForm {
       const response = await fetch(window.apiRoutes.templates);
       const data = await response.json();
       if (data.success) {
-          this.populateTemplates(data.data);
+          this.templates = data.data;
+          this.populateTemplates(this.templates);
           this.hideError('template-error');
       } else {
           this.showError('template-error', 'Failed to load templates');
@@ -505,11 +507,34 @@ class AssetForm {
     progressBar.textContent = '0%';
 
     const results = [];
+    const errors = []; // Collect all errors here
+    const skippedAssets = []; // Track skipped assets
+
     for (let i = 0; i < assets.length; i++) {
       const asset = assets[i];
+
+      // Check template before submitting
+      const templateCheck = await this.checkTemplateMatch(asset.srjc_tag);
+
+      if (!templateCheck.matches) {
+        if (templateCheck.reason === 'unapproved_existing_template') {
+          errors.push(`Cannot update existing asset ${asset.srjc_tag}: It has template ${templateCheck.existingTemplate} (must be Desktop or Laptop)`);
+        } else {
+          errors.push(`Template of ${asset.srjc_tag} is ${templateCheck.existingTemplate} not ${templateCheck.selectedTemplate}`);
+        }
+        skippedAssets.push(asset.srjc_tag);
+        results.push({ asset: asset.srjc_tag, success: false, skipped: true, reason: 'template_mismatch' });
+
+        // Update progress
+        const percent = Math.round(((i + 1) / assets.length) * 100);
+        progressBar.style.width = `${percent}%`;
+        progressBar.textContent = `${i + 1} / ${assets.length}`;
+        continue;
+      }
+
       try {
         const formData = new FormData(this.submitAllForm);
-        formData.append('assets', JSON.stringify([asset])); // send single asset
+        formData.append('assets', JSON.stringify([asset]));
 
         const response = await fetch(this.submitAllForm.action, {
           method: 'POST',
@@ -521,9 +546,18 @@ class AssetForm {
         });
 
         const data = await response.json();
-        results.push({ asset: asset.srjc_tag, success: true, data });
+
+        if (response.ok && data.success) {
+          results.push({ asset: asset.srjc_tag, success: true, data });
+        } else {
+          // Handle API errors
+          const errorMessage = data.message || 'Unknown error occurred';
+          errors.push(`Failed "${asset.srjc_tag}": ${errorMessage}`);
+          results.push({ asset: asset.srjc_tag, success: false, error: errorMessage });
+        }
       } catch (error) {
         console.error('Error submitting asset', asset, error);
+        errors.push(`Error "${asset.srjc_tag}": ${error.message}`);
         results.push({ asset: asset.srjc_tag, success: false, error: error.message });
       }
 
@@ -533,21 +567,148 @@ class AssetForm {
       progressBar.textContent = `${i + 1} / ${assets.length}`;
     }
 
-    // Done
-    localStorage.removeItem(this.storageKey);
-    this.updateAssetsTable([]);
-    this.submitAllForm.reset();
-    document.getElementById('srjc_tag').focus();
-    this.showMessage('All assets submitted!', 'success');
+    // Calculate results
+    const successCount = results.filter(r => r.success).length;
+    const errorCount = results.filter(r => !r.success && !r.skipped).length;
+    const skippedCount = results.filter(r => r.skipped).length;
 
+    // Clean up successful assets from storage, but keep failed/skipped ones
+    if (successCount > 0) {
+      const successfulTags = results.filter(r => r.success).map(r => r.asset);
+      const remainingAssets = assets.filter(asset => !successfulTags.includes(asset.srjc_tag));
+      this.saveAssetsToStorage(remainingAssets);
+      this.updateAssetsTable(remainingAssets);
+    }
+
+    // Show final results
+    this.displayFinalResults(successCount, errorCount, skippedCount, errors);
+
+    // Clean up UI
     progressContainer.classList.add('hidden');
     this.loadingDiv.classList.add('hidden');
     this.submitAllButton.disabled = false;
 
-    //console.log('Submission results:', results);
+    if (successCount > 0) {
+      document.getElementById('srjc_tag').focus();
+    }
   }
-}
 
+  // New method to display comprehensive results
+  displayFinalResults(successCount, errorCount, skippedCount, errors) {
+    let message = '';
+    let messageType = 'success';
+
+    // Build summary message
+    const parts = [];
+    if (successCount > 0) {
+      parts.push(`${successCount} asset${successCount !== 1 ? 's' : ''} submitted successfully`);
+    }
+    if (errorCount > 0) {
+      parts.push(`${errorCount} failed`);
+      messageType = 'error';
+    }
+    if (skippedCount > 0) {
+      parts.push(`${skippedCount} skipped`);
+      messageType = 'error';
+    }
+
+    if (parts.length === 0) {
+      message = 'No assets processed';
+      messageType = 'error';
+    } else {
+      message = parts.join(', ');
+    }
+
+    // Display summary and errors
+    if (errors.length > 0) {
+      const errorHtml = `
+        <div class="text-red-600 text-sm font-medium mb-2">
+          Processing completed: ${message}
+        </div>
+        <div class="text-red-600 text-sm font-medium mb-2">
+          Issues encountered:
+        </div>
+        <ul class="text-red-600 text-sm list-disc list-inside space-y-1 ml-4">
+          ${errors.map(error => `<li>${error}</li>`).join('')}
+        </ul>
+      `;
+      this.messagesDiv.innerHTML = errorHtml;
+    } else if (successCount > 0) {
+      this.showMessage(message, 'success');
+    } else {
+      this.showMessage('No assets were processed', 'error');
+    }
+  }
+
+  // New method to check template match and return detailed info
+  async checkTemplateMatch(srjcTag) {
+    try {
+      const response = await fetch(`${window.apiRoutes.searchAssets}?name=${encodeURIComponent(srjcTag)}`);
+      const data = await response.json();
+
+      // Get the currently selected template name from the form
+      const selectedTemplateId = this.templateSelect.value;
+      const selectedTemplate = this.templates.find(template => template.id === selectedTemplateId);
+      const selectedTemplateName = selectedTemplate ? selectedTemplate.text : 'Unknown';
+
+      // Get list of approved template names
+      const approvedTemplateNames = this.templates.map(template => template.text);
+
+      if (data.success && data.data) {
+        const asset = data.data;
+        const existingTemplateName = asset.template_name;
+
+        // console.log('Existing template:', existingTemplateName);
+        // console.log('Selected template:', selectedTemplateName);
+        // console.log('Approved templates:', approvedTemplateNames);
+
+        // For existing assets, check if the existing template is in our approved list
+        const existingTemplateApproved = approvedTemplateNames.includes(existingTemplateName);
+
+        if (!existingTemplateApproved) {
+          return {
+            matches: false,
+            existingTemplate: existingTemplateName,
+            selectedTemplate: selectedTemplateName,
+            assetExists: true,
+            reason: 'unapproved_existing_template'
+          };
+        }
+
+        // If existing template is approved (Desktop or Laptop), it's fine regardless of selection
+        return {
+          matches: true,
+          existingTemplate: existingTemplateName,
+          selectedTemplate: selectedTemplateName,
+          assetExists: true
+        };
+      }
+
+      // Asset doesn't exist, so template is "correct" (no conflict) - will use selected template
+      return {
+        matches: true,
+        existingTemplate: null,
+        selectedTemplate: selectedTemplateName,
+        assetExists: false
+      };
+
+    } catch (error) {
+      console.error('Error checking template for SRJC Tag', srjcTag, error);
+      // Return true on error to not block the process
+      const selectedTemplateId = this.templateSelect.value;
+      const selectedTemplate = this.templates.find(template => template.id === selectedTemplateId);
+      const selectedTemplateName = selectedTemplate ? selectedTemplate.text : 'Unknown';
+
+      return {
+        matches: true,
+        existingTemplate: null,
+        selectedTemplate: selectedTemplateName,
+        assetExists: false
+      };
+    }
+  }
+
+}
 // Initialize the form when the page loads
 document.addEventListener('DOMContentLoaded', () => {
   window.assetForm = new AssetForm();
