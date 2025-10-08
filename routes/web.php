@@ -39,6 +39,7 @@ Route::middleware(['auth'])->group(function () {
 
 // TopDesk API.
 Route::middleware(['auth'])->group(function () {
+  Route::get('/topdesk/device-types', [TopDeskDataController::class, 'getDeviceTypes'])->name('getDeviceTypes');
   Route::get('/topdesk/campuses', [TopDeskDataController::class, 'getCampuses'])->name('getCampuses');
   Route::get('/topdesk/buildings', [TopDeskDataController::class, 'getBuildingsByCampus'])->name('getBuildings');
   Route::get('/topdesk/asset-makes', [TopDeskDataController::class, 'getAssetMakes'])->name('getAssetMakes');

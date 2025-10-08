@@ -13,12 +13,12 @@
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-baseline">
       <div class="space-y-2">
-        <label for="template" class="block text-sm font-semibold text-gray-700">Template</label>
-        <select id="template" name="template" required
+        <label for="device_type" class="block text-sm font-semibold text-gray-700">Device Type</label>
+        <select id="device_type" name="device_type" required
           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-900 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed">
-          <option value="">Loading templates...</option>
+          <option value="">Loading device types...</option>
         </select>
-        <div id="template-error" class="hidden text-sm text-red-600"></div>
+        <div id="device-type-error" class="hidden text-sm text-red-600"></div>
       </div>
 
       <div class="space-y-2">
@@ -112,7 +112,7 @@
         <table class="min-w-full bg-white">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Template</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device Type</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campus</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Building</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>

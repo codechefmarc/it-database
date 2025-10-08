@@ -37,8 +37,7 @@ class TopDeskService {
    * @var array
    */
   public array $allowedTemplates = [
-    "Desktop",
-    "Laptop",
+    "Computer",
   ];
 
   public function __construct() {
@@ -219,6 +218,34 @@ class TopDeskService {
   }
 
   /**
+   * Get device types for select dropdown.
+   */
+  public function getDeviceTypes(): array {
+    return Cache::remember('topdesk.device_types', $this->cacheMinutes * 60, function () {
+      try {
+        $response = Http::withBasicAuth($this->username, $this->password)
+          ->withHeaders([
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+          ])->timeout(30)->get($this->baseUrl . '/tas/api/assetmgmt/dropdowns/computer-type?field=name');
+
+        if ($response->successful()) {
+            return $response->json();
+        }
+
+        throw new \Exception('Failed to fetch device types from TopDesk API. Status: ' . $response->status());
+
+      }
+      catch (\Exception $e) {
+        Log::error('TopDesk API Error - Get Device types', [
+          'message' => $e->getMessage(),
+        ]);
+        throw $e;
+      }
+    });
+  }
+
+  /**
    * Get asset templates.
    */
   public function getTemplates(): array {
@@ -288,11 +315,12 @@ class TopDeskService {
           'Content-Type' => 'application/json',
           'Accept' => 'application/json',
         ])->timeout(30)->post($this->baseUrl . '/tas/api/assetmgmt/assets', [
-          'type_id' => $assetData['template'],
+          'type_id' => $this->topDeskTemplateId,
           'name' => $assetData['srjc_tag'],
+          'computer-type' => $assetData['device_type'] ?? NULL,
           'room' => $assetData['room'] ?? NULL,
           'make' => $assetData['make'] ?? NULL,
-          'model' => $assetData['model'] ?? NULL,
+          'model-1' => $assetData['model'] ?? NULL,
           'serial-number' => $assetData['serial_number'] ?? NULL,
           'notes' => $assetData['notes'] . "Added by IT database web app on " . date('Y-m-d H:i:s'),
         ]);
@@ -615,9 +643,10 @@ class TopDeskService {
           'Content-Type' => 'application/json',
           'Accept' => 'application/json',
         ])->timeout(30)->post($this->baseUrl . "/tas/api/assetmgmt/assets/{$assetId}", [
+          'computer-type' => $assetData['device_type'] ?? NULL,
           'room' => $assetData['room'],
           'make' => $assetData['make'] ?? NULL,
-          'model' => $assetData['model'] ?? NULL,
+          'model-1' => $assetData['model'] ?? NULL,
           'serial-number' => $assetData['serial_number'] ?? NULL,
           'notes' => $assetData['notes'] . "\nUpdated by IT database web app on " . date('Y-m-d H:i:s'),
         ]);

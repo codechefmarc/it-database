@@ -7,7 +7,7 @@ class AssetForm {
     this.roomInput = document.getElementById('room');
     this.makeSelect = document.getElementById('make');
     this.modelInput = document.getElementById('model');
-    this.templateSelect = document.getElementById('template');
+    this.deviceTypeSelect = document.getElementById('device_type');
     this.addToListForm = document.getElementById('addToListForm');
     this.submitAllForm = document.getElementById('submitAllForm');
     this.messagesDiv = document.getElementById('form-messages');
@@ -15,7 +15,7 @@ class AssetForm {
     this.srjcTagInput = document.getElementById('srjc_tag');
     this.serialNumberInput = document.getElementById('serial_number');
     this.loadingDiv = document.getElementById('loading');
-    this.templates = [];
+    this.deviceTypes = [];
 
     // Table elements
     this.assetsTableContainer = document.getElementById('assets-table-container');
@@ -41,7 +41,7 @@ class AssetForm {
     try {
       const parsed = JSON.parse(saved);
       return {
-        template: parsed.template || '',
+        device_type: parsed.device_type || '',
         campus: parsed.campus || '',
         building: parsed.building || '',
         room: parsed.room || '',
@@ -55,7 +55,7 @@ class AssetForm {
   }
 
   async init() {
-    await this.loadTemplates();
+    await this.loadDeviceTypes();
     await this.loadCampuses();
     await this.loadMakes();
     this.setupEventListeners();
@@ -70,10 +70,10 @@ class AssetForm {
   async restoreSavedValues() {
     const saved = this.getSavedValues();
 
-    // Restore template
-    if (saved.template) {
-      this.templateSelect.value = saved.template;
-      this.templateSelect.dispatchEvent(new Event('change'));
+    // Restore device type first
+    if (saved.device_type) {
+      this.deviceTypeSelect.value = saved.device_type;
+      this.deviceTypeSelect.dispatchEvent(new Event('change'));
     }
 
     // Restore campus first
@@ -212,40 +212,40 @@ class AssetForm {
     }
   }
 
-  async loadTemplates() {
+  async loadDeviceTypes() {
     try {
-      this.setTemplatesLoading(true);
+      this.setDeviceTypesLoading(true);
 
-      const response = await fetch(window.apiRoutes.templates);
+      const response = await fetch(window.apiRoutes.deviceTypes);
       const data = await response.json();
       if (data.success) {
-          this.templates = data.data;
-          this.populateTemplates(this.templates);
-          this.hideError('template-error');
+          this.deviceTypes = data.data;
+          this.populateDeviceTypes(this.deviceTypes);
+          this.hideError('device-type-error');
       } else {
-          this.showError('template-error', 'Failed to load templates');
+          this.showError('device-type-error', 'Failed to load device types');
       }
     } catch (error) {
-      console.error('Error loading templates:', error);
-      this.showError('template-error', 'Error loading templates');
+      console.error('Error loading device types:', error);
+      this.showError('device-type-error', 'Error loading device types');
     } finally {
-      this.setTemplatesLoading(false);
+      this.setDeviceTypesLoading(false);
     }
   }
 
-  populateTemplates(templates) {
-    this.templateSelect.innerHTML = '<option value="">Select a template</option>';
+  populateDeviceTypes(deviceTypes) {
+    this.deviceTypeSelect.innerHTML = '<option value="">Select a device type</option>';
 
-    templates.forEach(template => {
+    deviceTypes.forEach(deviceType => {
       const option = document.createElement('option');
-      option.value = template.id;
-      option.textContent = template.text;
-      this.templateSelect.appendChild(option);
+      option.value = deviceType.id;
+      option.textContent = deviceType.name;
+      this.deviceTypeSelect.appendChild(option);
     });
 
-    // Restore saved template value after populating
-    if (this.savedValues.template) {
-      this.templateSelect.value = this.savedValues.template;
+    // Restore saved device type value after populating
+    if (this.savedValues.device_type) {
+      this.deviceTypeSelect.value = this.savedValues.device_type;
     }
   }
 
@@ -311,12 +311,12 @@ class AssetForm {
     }
   }
 
-  setTemplatesLoading(loading) {
+  setDeviceTypesLoading(loading) {
     if (loading) {
-      this.templateSelect.innerHTML = '<option value="">Loading templates...</option>';
-      this.templateSelect.disabled = true;
+      this.deviceTypeSelect.innerHTML = '<option value="">Loading device types...</option>';
+      this.deviceTypeSelect.disabled = true;
     } else {
-      this.templateSelect.disabled = false;
+      this.deviceTypeSelect.disabled = false;
     }
   }
 
@@ -365,7 +365,7 @@ class AssetForm {
     const formData = new FormData(this.addToListForm);
 
     // Validate required fields
-    const requiredFields = ['template', 'campus', 'building', 'room', 'make', 'model', 'srjc_tag', 'serial_number'];
+    const requiredFields = ['device_type', 'campus', 'building', 'room', 'make', 'model', 'srjc_tag', 'serial_number'];
     const missingFields = [];
 
     requiredFields.forEach(field => {
@@ -382,8 +382,8 @@ class AssetForm {
     // Create asset object
     const asset = {
       id: Date.now(), // Simple unique ID
-      template: formData.get('template'),
-      templateName: this.getSelectText(this.templateSelect),
+      device_type: formData.get('device_type'),
+      deviceTypeName: this.getSelectText(this.deviceTypeSelect),
       campus: formData.get('campus'),
       campusName: this.getSelectText(this.campusSelect),
       building: formData.get('building'),
@@ -412,7 +412,7 @@ class AssetForm {
 
     // Save last submitted values for form restoration
     localStorage.setItem('bulk_scan_last', JSON.stringify({
-      template: asset.template,
+      device_type: asset.device_type,
       campus: asset.campus,
       building: asset.building,
       room: asset.room,
@@ -457,7 +457,7 @@ class AssetForm {
     // Update table body
     this.assetsTableBody.innerHTML = assets.map(asset => `
       <tr class="hover:bg-gray-50">
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.templateName}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.deviceTypeName}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.campusName}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.buildingName}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.room}</td>
@@ -513,12 +513,12 @@ class AssetForm {
     for (let i = 0; i < assets.length; i++) {
       const asset = assets[i];
 
-      // Check template before submitting
+      // Check device type before submitting
       const templateCheck = await this.checkTemplateMatch(asset.srjc_tag);
 
       if (!templateCheck.matches) {
         if (templateCheck.reason === 'unapproved_existing_template') {
-          errors.push(`Cannot update existing asset ${asset.srjc_tag}: It has template ${templateCheck.existingTemplate} (must be Desktop or Laptop)`);
+          errors.push(`Cannot update existing asset ${asset.srjc_tag}: It has template ${templateCheck.existingTemplate} (must be Computer)`);
         } else {
           errors.push(`Template of ${asset.srjc_tag} is ${templateCheck.existingTemplate} not ${templateCheck.selectedTemplate}`);
         }
@@ -647,12 +647,13 @@ class AssetForm {
       const data = await response.json();
 
       // Get the currently selected template name from the form
-      const selectedTemplateId = this.templateSelect.value;
-      const selectedTemplate = this.templates.find(template => template.id === selectedTemplateId);
+      const selectedTemplateId = this.deviceTypeSelect.value;
+      const selectedTemplate = this.deviceTypes.find(template => template.id === selectedTemplateId);
       const selectedTemplateName = selectedTemplate ? selectedTemplate.text : 'Unknown';
 
       // Get list of approved template names
-      const approvedTemplateNames = this.templates.map(template => template.text);
+      //const approvedTemplateNames = this.deviceTypes.map(template => template.text);
+      const approvedTemplateNames = ['Computer'];
 
       if (data.success && data.data) {
         const asset = data.data;
@@ -695,8 +696,8 @@ class AssetForm {
     } catch (error) {
       console.error('Error checking template for SRJC Tag', srjcTag, error);
       // Return true on error to not block the process
-      const selectedTemplateId = this.templateSelect.value;
-      const selectedTemplate = this.templates.find(template => template.id === selectedTemplateId);
+      const selectedTemplateId = this.deviceTypeSelect.value;
+      const selectedTemplate = this.deviceTypes.find(template => template.id === selectedTemplateId);
       const selectedTemplateName = selectedTemplate ? selectedTemplate.text : 'Unknown';
 
       return {
