@@ -1,5 +1,9 @@
 import './bootstrap';
 
+// Autocomplete.
+import TomSelect from 'tom-select';
+import "tom-select/dist/css/tom-select.min.css"
+
 class AssetForm {
   constructor() {
     this.campusSelect = document.getElementById('campus');
@@ -58,6 +62,8 @@ class AssetForm {
     await this.loadDeviceTypes();
     await this.loadCampuses();
     await this.loadMakes();
+    this.initModelAutocomplete();
+    await this.loadModels();
     this.setupEventListeners();
 
     // Restore saved values after everything is loaded
@@ -212,6 +218,59 @@ class AssetForm {
     }
   }
 
+  async loadModels() {
+    try {
+      this.setModelsLoading(true);
+
+      const response = await fetch(window.apiRoutes.assetModels);
+      const data = await response.json();
+
+      if (data.success) {
+          this.setModelsLoading(false);
+          this.populateModels(data.data);
+          this.hideError('model-error');
+      } else {
+          this.showError('model-error', 'Failed to load models');
+          this.setModelsLoading(false);
+      }
+    } catch (error) {
+      console.error('Error loading models:', error);
+      this.showError('model-error', 'Error loading models');
+      this.setModelsLoading(false);
+    } finally {
+      this.setModelsLoading(false);
+    }
+  }
+
+  initModelAutocomplete() {
+    this.modelSelect = new TomSelect('#model', {
+      create: true,
+      createOnBlur: true,
+      maxItems: 1,
+      placeholder: 'Loading models...',
+      options: []
+    });
+    this.modelSelect.lock();
+  }
+
+
+  populateModels(models) {
+    if (document.getElementById('model')) {
+      var options = [];
+      for (const model of models) {
+        options.push({value: model.id, text: model.name});
+      }
+      console.log(options);
+      if (this.modelSelect) {
+        this.modelSelect.clearOptions();
+        this.modelSelect.addOptions(models.map(model => ({value: model.id, text: model.name})));
+        this.modelSelect.settings.placeholder = 'Select or type a model';
+        this.modelSelect.unlock();
+        this.modelSelect.inputState();
+      }
+    }
+  }
+
   async loadDeviceTypes() {
     try {
       this.setDeviceTypesLoading(true);
@@ -310,6 +369,18 @@ class AssetForm {
       this.makeSelect.disabled = false;
     }
   }
+
+  setModelsLoading(loading) {
+  if (loading) {
+    // Add a loading option to the select
+    this.modelInput.innerHTML = '<option value="">Loading models...</option>';
+    this.modelInput.disabled = true;
+  } else {
+    // Clear the loading option
+    this.modelInput.innerHTML = '';
+    this.modelInput.disabled = false;
+  }
+}
 
   setDeviceTypesLoading(loading) {
     if (loading) {

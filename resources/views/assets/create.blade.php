@@ -35,7 +35,8 @@
         <input type="text" id="model" name="model" required
           value="{{ old('model', session('bulk_scan.model', '')) }}"
           class="bg-white w-full px-3 h-10 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-      </div>
+          <div id="model-error" class="hidden text-sm text-red-600"></div>
+        </div>
     </div>
 
     <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">

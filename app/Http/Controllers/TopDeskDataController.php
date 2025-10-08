@@ -103,6 +103,26 @@ class TopDeskDataController extends Controller {
   }
 
   /**
+   * Get all asset models (for make/model dropdowns)
+   */
+  public function getAssetModels(): JsonResponse {
+    try {
+      $makes = $this->topDeskService->getAssetModels();
+
+      return response()->json([
+        'success' => TRUE,
+        'data' => $makes['results'],
+      ]);
+    }
+    catch (\Exception $e) {
+      return response()->json([
+        'success' => FALSE,
+        'message' => 'Failed to load models',
+      ], 500);
+    }
+  }
+
+  /**
    * Get all device types (for device type dropdowns)
    */
   public function getDeviceTypes(): JsonResponse {
