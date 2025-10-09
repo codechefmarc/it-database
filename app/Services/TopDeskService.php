@@ -337,6 +337,9 @@ class TopDeskService {
    * @throws Exception
    */
   public function createAsset(array $assetData): array {
+
+    $model = $this->modelLookup($assetData['model'] ?? '');
+
     try {
       $response = Http::withBasicAuth($this->username, $this->password)
         ->withHeaders([
@@ -348,9 +351,10 @@ class TopDeskService {
           'computer-type' => $assetData['device_type'] ?? NULL,
           'room' => $assetData['room'] ?? NULL,
           'make' => $assetData['make'] ?? NULL,
-          'model-1' => $assetData['model'] ?? NULL,
+          'model-1' => $model,
           'serial-number' => $assetData['serial_number'] ?? NULL,
           'notes' => $assetData['notes'] . "Added by IT database web app on " . date('Y-m-d H:i:s'),
+          'surplus' => !empty($assetData['surplus']) ? TRUE : FALSE,
         ]);
 
       if ($response->successful()) {
@@ -665,6 +669,9 @@ class TopDeskService {
    * @throws Exception
    */
   public function updateExistingAssetData(string $assetId, array $assetData): bool {
+
+    $model = $this->modelLookup($assetData['model'] ?? '');
+
     try {
       $response = Http::withBasicAuth($this->username, $this->password)
         ->withHeaders([
@@ -674,9 +681,10 @@ class TopDeskService {
           'computer-type' => $assetData['device_type'] ?? NULL,
           'room' => $assetData['room'],
           'make' => $assetData['make'] ?? NULL,
-          'model-1' => $assetData['model'] ?? NULL,
+          'model-1' => $model,
           'serial-number' => $assetData['serial_number'] ?? NULL,
           'notes' => $assetData['notes'] . "\nUpdated by IT database web app on " . date('Y-m-d H:i:s'),
+          'surplus' => !empty($assetData['surplus']) ? TRUE : FALSE,
         ]);
       if ($response->successful()) {
         if (env('APP_DEBUG')) {
@@ -694,6 +702,56 @@ class TopDeskService {
       Log::error('TopDesk API Error - Unable to update existing asset', [
         'message' => $e->getMessage(),
         'asset_name' => $assetData['srjc_tag'],
+      ]);
+      throw $e;
+    }
+  }
+
+  /**
+   * Look up model in TOPdesk by ID. If not found, create first then return ID.
+   */
+  private function modelLookup(string $model) {
+    $models = $this->getAssetModels();
+    $matchedModel = collect($models['results'] ?? [])->firstWhere('id', $model);
+
+    if ($matchedModel) {
+      $modelId = $matchedModel['id'];
+    }
+    else {
+      $modelId = $this->createModel($model);
+    }
+    return $modelId;
+
+  }
+
+  /**
+   * Create a new model in TOPdesk and return its ID.
+   */
+  private function createModel(string $modelName): string {
+
+    try {
+      $response = Http::withBasicAuth($this->username, $this->password)
+        ->withHeaders([
+          'Content-Type' => 'application/json',
+          'Accept' => 'application/json',
+        ])->timeout(30)->post($this->baseUrl . "/tas/api/assetmgmt/dropdowns/model-1", [
+          'name' => $modelName,
+        ]);
+      if ($response->successful()) {
+        if (env('APP_DEBUG')) {
+          Log::info('TopDesk Model created', [
+            'model_name' => $modelName,
+            'model_id' => $response->json()['id'] ?? NULL,
+          ]);
+        }
+        return $response->json()['id'];
+      }
+      throw new \Exception('Failed to create model. Status: ' . $response->status());
+    }
+    catch (\Exception $e) {
+      Log::error('TopDesk API Error - Unable to create model', [
+        'message' => $e->getMessage(),
+        'model_name' => $modelName,
       ]);
       throw $e;
     }

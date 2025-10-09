@@ -12,6 +12,7 @@ class AssetForm {
     this.makeSelect = document.getElementById('make');
     this.modelInput = document.getElementById('model');
     this.deviceTypeSelect = document.getElementById('device_type');
+    this.surplusInput = document.getElementById('surplus');
     this.addToListForm = document.getElementById('addToListForm');
     this.submitAllForm = document.getElementById('submitAllForm');
     this.messagesDiv = document.getElementById('form-messages');
@@ -50,7 +51,8 @@ class AssetForm {
         building: parsed.building || '',
         room: parsed.room || '',
         make: parsed.make || '',
-        model: parsed.model || ''
+        model: parsed.model || '',
+        surplus: parsed.surplus || ''
       };
     } catch (e) {
       console.error('Failed to parse saved bulk scan values', e);
@@ -104,6 +106,11 @@ class AssetForm {
 
     if (saved.room) this.roomInput.value = saved.room;
     if (saved.model) this.modelInput.value = saved.model;
+
+    if (saved.surplus) {
+      this.surplusInput.checked = true;
+    }
+
   }
 
   async loadCampuses() {
@@ -248,11 +255,16 @@ class AssetForm {
       createOnBlur: true,
       maxItems: 1,
       placeholder: 'Loading models...',
-      options: []
+      controlClass: 'bg-white w-full px-3 h-10 py-2 border border-gray-300 rounded-md shadow-sm relative',
+      options: [],
+      onChange: (value) => {
+        if (value) {
+          this.modelSelect.settings.placeholder = '';
+        }
+      }
     });
     this.modelSelect.lock();
   }
-
 
   populateModels(models) {
     if (document.getElementById('model')) {
@@ -260,12 +272,18 @@ class AssetForm {
       for (const model of models) {
         options.push({value: model.id, text: model.name});
       }
-      console.log(options);
       if (this.modelSelect) {
         this.modelSelect.clearOptions();
         this.modelSelect.addOptions(models.map(model => ({value: model.id, text: model.name})));
         this.modelSelect.settings.placeholder = 'Select or type a model';
         this.modelSelect.unlock();
+        this.modelSelect.inputState();
+      }
+
+      // Restore saved model value after populating
+      if (this.savedValues.model) {
+        this.modelSelect.setValue(this.savedValues.model);
+        this.modelSelect.settings.placeholder = '';
         this.modelSelect.inputState();
       }
     }
@@ -463,6 +481,8 @@ class AssetForm {
       make: formData.get('make'),
       makeName: this.getSelectText(this.makeSelect),
       model: formData.get('model'),
+      modelName: this.modelInput.nextElementSibling.firstChild.firstChild.innerHTML,
+      surplus: this.surplusInput.checked ? 1 : 0,
       srjc_tag: formData.get('srjc_tag'),
       serial_number: formData.get('serial_number'),
       created_at: new Date().toLocaleString()
@@ -488,7 +508,8 @@ class AssetForm {
       building: asset.building,
       room: asset.room,
       make: asset.make,
-      model: asset.model
+      model: asset.model,
+      surplus: asset.surplus
     }));
 
     // Clear only the non-persistent fields
@@ -533,7 +554,8 @@ class AssetForm {
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.buildingName}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.room}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.makeName}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.model}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.modelName}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(asset.surplus) ? 'Yes' : 'No'}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${asset.srjc_tag}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.serial_number}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">

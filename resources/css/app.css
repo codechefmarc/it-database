@@ -13,3 +13,7 @@
 .fa-spinner {
   @apply animate-spin;
 }
+
+#model-ts-control {
+  @apply w-full min-w-0 top-0 left-0 h-10 absolute px-3;
+}

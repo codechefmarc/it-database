@@ -31,10 +31,10 @@
       </div>
 
       <div class="space-y-2">
-        <label for="model" class="block text-sm font-semibold text-gray-700">Model</label>
+        <label for="model" class="block text-sm font-semibold text-gray-700">Model <small>(Search or add your own)</small></label>
         <input type="text" id="model" name="model" required
           value="{{ old('model', session('bulk_scan.model', '')) }}"
-          class="bg-white w-full px-3 h-10 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+          class="w-full">
           <div id="model-error" class="hidden text-sm text-red-600"></div>
         </div>
     </div>
@@ -66,6 +66,14 @@
       </div>
     </div>
 
+    <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div class="space-y-2 flex gap-1 items-center align-middle">
+        <input type="checkbox" id="surplus" name="surplus"
+          value="{{ old('surplus', session('bulk_scan.surplus', '')) }}"
+          class="m-0 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+        <label for="surplus" class="text-sm font-semibold text-gray-700">Surplus?</label>
+      </div>
+    </div>
 
 
     <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 items-baseline">
@@ -119,6 +127,7 @@
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Make</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Surplus</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SRJC Tag</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial Number</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
