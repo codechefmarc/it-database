@@ -37,10 +37,11 @@ class AssetController extends Controller {
 
     foreach ($assets as $assetData) {
       try {
-        $asset = $this->topDeskService->createAndAssignAsset($assetData);
+        $result = $this->topDeskService->createAndAssignAsset($assetData);
         $results[] = [
           'asset' => $assetData['srjc_tag'] ?? NULL,
           'success' => TRUE,
+          'model_id' => $result['model_id'],
         ];
       }
       catch (\Exception $e) {

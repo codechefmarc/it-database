@@ -246,6 +246,34 @@ class TopDeskService {
   }
 
   /**
+   * Get models for select dropdown.
+   */
+  public function getStockRooms(): array {
+    return Cache::remember('topdesk.stock_rooms', $this->cacheMinutes * 60, function () {
+      try {
+        $response = Http::withBasicAuth($this->username, $this->password)
+          ->withHeaders([
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+          ])->timeout(30)->get($this->baseUrl . '/tas/api/assetmgmt/assets?resourceCategory=stock');
+
+        if ($response->successful()) {
+            return $response->json();
+        }
+
+        throw new \Exception('Failed to fetch stock rooms from TopDesk API. Status: ' . $response->status());
+
+      }
+      catch (\Exception $e) {
+        Log::error('TopDesk API Error - Get stock rooms', [
+          'message' => $e->getMessage(),
+        ]);
+        throw $e;
+      }
+    });
+  }
+
+  /**
    * Get device types for select dropdown.
    */
   public function getDeviceTypes(): array {
@@ -336,9 +364,9 @@ class TopDeskService {
    *
    * @throws Exception
    */
-  public function createAsset(array $assetData): array {
+  public function createAsset(array $assetData, ?string $modelId = NULL): array {
 
-    $model = $this->modelLookup($assetData['model'] ?? '');
+    $model = $modelId ?? $this->modelLookup($assetData['model'] ?? '');
 
     try {
       $response = Http::withBasicAuth($this->username, $this->password)
@@ -560,6 +588,8 @@ class TopDeskService {
   public function createAndAssignAsset(array $assetData): array {
     $existingAsset = $this->searchAssetsByName($assetData['srjc_tag']);
 
+    $resolvedModelId = $this->modelLookup($assetData['model'] ?? '');
+
     $assetData['notes'] = $existingAsset['notes'] ?? '';
     if ($existingAsset) {
       if (in_array($existingAsset['template_name'], $this->allowedTemplates, TRUE) === FALSE) {
@@ -571,7 +601,9 @@ class TopDeskService {
       // Asset exists - clear existing location assignments first.
       $assetId = $existingAsset['unid'];
       $clearedCount = $this->clearAssetLocationAssignments($assetId);
-      $this->updateExistingAssetData($assetId, $assetData);
+
+      $this->updateExistingAssetData($assetId, $assetData, $resolvedModelId);
+
       if (env('APP_DEBUG')) {
         Log::info('TopDesk Asset Found - Reassigning Location', [
           'asset_id' => $assetId,
@@ -583,7 +615,7 @@ class TopDeskService {
     }
     else {
       $operation = 'created';
-      $asset = $this->createAsset($assetData);
+      $asset = $this->createAsset($assetData, $resolvedModelId);
       $assetId = $asset['data']['unid'] ?? NULL;
 
       if (!$assetId) {
@@ -598,6 +630,7 @@ class TopDeskService {
     return [
       'asset' => $assetId,
       'operation' => $operation,
+      'model_id' => $resolvedModelId,
     ];
   }
 
@@ -670,7 +703,7 @@ class TopDeskService {
    */
   public function updateExistingAssetData(string $assetId, array $assetData): bool {
 
-    $model = $this->modelLookup($assetData['model'] ?? '');
+    $model = $modelId ?? $this->modelLookup($assetData['model'] ?? '');
 
     try {
       $response = Http::withBasicAuth($this->username, $this->password)
@@ -744,6 +777,7 @@ class TopDeskService {
             'model_id' => $response->json()['id'] ?? NULL,
           ]);
         }
+        Cache::forget('topdesk.models');
         return $response->json()['id'];
       }
       throw new \Exception('Failed to create model. Status: ' . $response->status());

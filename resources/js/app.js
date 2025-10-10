@@ -12,6 +12,7 @@ class AssetForm {
     this.makeSelect = document.getElementById('make');
     this.modelInput = document.getElementById('model');
     this.deviceTypeSelect = document.getElementById('device_type');
+    this.stockSelect = document.getElementById('stock');
     this.surplusInput = document.getElementById('surplus');
     this.addToListForm = document.getElementById('addToListForm');
     this.submitAllForm = document.getElementById('submitAllForm');
@@ -52,7 +53,8 @@ class AssetForm {
         room: parsed.room || '',
         make: parsed.make || '',
         model: parsed.model || '',
-        surplus: parsed.surplus || ''
+        surplus: parsed.surplus || '',
+        stock_room: parsed.stock_room || ''
       };
     } catch (e) {
       console.error('Failed to parse saved bulk scan values', e);
@@ -64,6 +66,7 @@ class AssetForm {
     await this.loadDeviceTypes();
     await this.loadCampuses();
     await this.loadMakes();
+    await this.loadStockRooms();
     this.initModelAutocomplete();
     await this.loadModels();
     this.setupEventListeners();
@@ -109,6 +112,11 @@ class AssetForm {
 
     if (saved.surplus) {
       this.surplusInput.checked = true;
+    }
+
+    if (saved.stock_room) {
+      this.stockSelect.value = saved.stock_room;
+      this.stockSelect.dispatchEvent(new Event('change'));
     }
 
   }
@@ -289,6 +297,43 @@ class AssetForm {
     }
   }
 
+  async loadStockRooms() {
+    try {
+      this.setStockRoomsLoading(true);
+
+      const response = await fetch(window.apiRoutes.stockRooms);
+      const data = await response.json();
+
+      if (data.success) {
+          this.populateStockRooms(data.data);
+          this.hideError('stock-error');
+      } else {
+          this.showError('stock-error', 'Failed to load stock rooms');
+      }
+    } catch (error) {
+      console.error('Error loading stock rooms:', error);
+      this.showError('stock-error', 'Error loading stock rooms');
+    } finally {
+      this.setStockRoomsLoading(false);
+    }
+  }
+
+  populateStockRooms(stock_rooms) {
+    this.stockSelect.innerHTML = '<option value="">Select a stock room</option>';
+
+    stock_rooms.forEach(stock_room => {
+      const option = document.createElement('option');
+      option.value = stock_room.id;
+      option.textContent = stock_room.text;
+      this.stockSelect.appendChild(option);
+    });
+
+    // Restore saved make value after populating
+    if (this.savedValues.stock_room) {
+      this.stockSelect.value = this.savedValues.stock_room;
+    }
+  }
+
   async loadDeviceTypes() {
     try {
       this.setDeviceTypesLoading(true);
@@ -388,6 +433,15 @@ class AssetForm {
     }
   }
 
+  setStockRoomsLoading(loading) {
+    if (loading) {
+      this.stockSelect.innerHTML = '<option value="">Loading stock rooms...</option>';
+      this.stockSelect.disabled = true;
+    } else {
+      this.stockSelect.disabled = false;
+    }
+  }
+
   setModelsLoading(loading) {
   if (loading) {
     // Add a loading option to the select
@@ -482,6 +536,8 @@ class AssetForm {
       makeName: this.getSelectText(this.makeSelect),
       model: formData.get('model'),
       modelName: this.modelInput.nextElementSibling.firstChild.firstChild.innerHTML,
+      stockRoom: formData.get('stock') || '',
+      stockRoomName: this.getSelectText(this.stockSelect),
       surplus: this.surplusInput.checked ? 1 : 0,
       srjc_tag: formData.get('srjc_tag'),
       serial_number: formData.get('serial_number'),
@@ -509,7 +565,8 @@ class AssetForm {
       room: asset.room,
       make: asset.make,
       model: asset.model,
-      surplus: asset.surplus
+      surplus: asset.surplus,
+      stock_room: asset.stockRoom
     }));
 
     // Clear only the non-persistent fields
@@ -549,15 +606,32 @@ class AssetForm {
     // Update table body
     this.assetsTableBody.innerHTML = assets.map(asset => `
       <tr class="hover:bg-gray-50">
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.deviceTypeName}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.campusName}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.buildingName}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.room}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.makeName}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.modelName}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(asset.surplus) ? 'Yes' : 'No'}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${asset.srjc_tag}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.serial_number}</td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="text-sm text-gray-900">
+            ${asset.makeName} ${asset.modelName}
+          </div>
+          <div class="text-xs text-gray-500">
+            ${asset.deviceTypeName}
+          </div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="text-sm text-gray-900">
+            ${asset.room} ${asset.buildingName}
+            </div>
+          <div class="text-xs text-gray-500">
+            ${asset.campusName}
+          </div>
+          ${(asset.stockRoom) ? '<div class="text-xs text-blue-500">Stock room: ' + asset.stockRoomName + '</div>' : ''}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+          <div class="text-sm text-gray-900">
+            SRJC: ${asset.srjc_tag}
+          </div>
+          <div class="text-xs text-gray-500">
+            SN: ${asset.serial_number}
+          </div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(asset.surplus) ? '<span class="text-red-500">Yes</span>' : 'No'}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
           <button onclick="assetForm.removeAsset(${asset.id})"
             class="text-red-600 hover:text-red-900 transition-colors">
@@ -642,6 +716,13 @@ class AssetForm {
 
         if (response.ok && data.success) {
           results.push({ asset: asset.srjc_tag, success: true, data });
+
+          if (data.results && data.results.length > 0 && data.results[0].model_id) {
+            const saved = JSON.parse(localStorage.getItem('bulk_scan_last') || '{}');
+            saved.model = data.results[0].model_id; // Update with UUID
+            localStorage.setItem('bulk_scan_last', JSON.stringify(saved));
+          }
+
         } else {
           // Handle API errors
           const errorMessage = data.message || 'Unknown error occurred';

@@ -123,6 +123,26 @@ class TopDeskDataController extends Controller {
   }
 
   /**
+   * Get all asset stock rooms
+   */
+  public function getStockRooms(): JsonResponse {
+    try {
+      $stockRooms = $this->topDeskService->getStockRooms();
+
+      return response()->json([
+        'success' => TRUE,
+        'data' => $stockRooms['dataSet'],
+      ]);
+    }
+    catch (\Exception $e) {
+      return response()->json([
+        'success' => FALSE,
+        'message' => 'Failed to load stock rooms',
+      ], 500);
+    }
+  }
+
+  /**
    * Get all device types (for device type dropdowns)
    */
   public function getDeviceTypes(): JsonResponse {

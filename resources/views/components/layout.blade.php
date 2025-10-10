@@ -104,6 +104,7 @@
         buildings: '{{ route("getBuildings") }}',
         assetMakes: '{{ route("getAssetMakes") }}',
         assetModels: '{{ route("getAssetModels") }}',
+        stockRooms: '{{ route("getStockRooms") }}',
         deviceTypes: '{{ route("getDeviceTypes") }}',
         templates: '{{ route("getTemplates") }}',
         searchAssets: '{{ route("searchAssets") }}',
