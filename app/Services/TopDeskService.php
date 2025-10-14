@@ -39,6 +39,10 @@ class TopDeskService {
   public array $allowedTemplates = [
     "Computer",
   ];
+  /**
+   * TopDesk capability ID for stock room assignment.
+   */
+  private string $topDeskStockRoomCapabilityId = "DAD98DAD-054B-41AE-A727-3E3B37342739";
 
   public function __construct() {
     $this->baseUrl = rtrim(config('services.topdesk.base_url'), '/');
@@ -625,6 +629,7 @@ class TopDeskService {
     }
     if ($assetId) {
       $this->assignAssetToLocation($assetId, $assetData['campus'], $assetData['building']);
+      $this->assignAssetToStockroom($assetId, $assetData['stockRoom']);
     }
 
     return [
@@ -786,6 +791,147 @@ class TopDeskService {
       Log::error('TopDesk API Error - Unable to create model', [
         'message' => $e->getMessage(),
         'model_name' => $modelName,
+      ]);
+      throw $e;
+    }
+  }
+
+  /**
+   * Assign an asset to a stock room or remove from stock room.
+   *
+   * @param string $assetId
+   *   The asset ID to assign to or remove from stock.
+   * @param string $stockRoomId
+   *   The stockroom ID or empty string.
+   *
+   * @return bool
+   *   If successful, returns TRUE.
+   */
+  private function assignAssetToStockroom(string $assetId, string $stockRoomId): bool {
+    // Always unlink stock first.
+    $stockLinkId = $this->getStockLinkId($assetId);
+
+    if ($stockLinkId) {
+      $this->unlinkStockroom($stockLinkId);
+    }
+
+    if (!$stockRoomId) {
+      return TRUE;
+    }
+
+    try {
+      $response = Http::withBasicAuth($this->username, $this->password)
+        ->withHeaders([
+          'Content-Type' => 'application/json',
+          'Accept' => 'application/json',
+        ])->timeout(30)->post($this->baseUrl . '/tas/api/assetmgmt/assetLinks', [
+          'capabilityId' => $this->topDeskStockRoomCapabilityId,
+          'sourceId' => $stockRoomId,
+          'targetId' => $assetId,
+          'type' => 'parent',
+        ]);
+
+      if ($response->successful()) {
+        if (env('APP_DEBUG')) {
+          Log::info('TopDesk Asset Assigned to Stockroom', [
+            'asset_id' => $assetId,
+            'stock_room_id' => $stockRoomId,
+          ]);
+        }
+        return TRUE;
+      }
+
+      throw new \Exception('Failed to assign asset to stock room. Status: ' . $response->status());
+
+    }
+    catch (\Exception $e) {
+      Log::error('TopDesk API Error - Assign Asset to Stock Room', [
+        'message' => $e->getMessage(),
+        'asset_id' => $assetId,
+        'stock_room_id' => $stockRoomId,
+      ]);
+      throw $e;
+    }
+  }
+
+  /**
+   * Gets the stock link ID or NULL so we can unlink.
+   *
+   * @param string $assetId
+   *   The asset ID to get a stock link.
+   *
+   * @return string|null
+   *   Returns a link ID from asset to stock or NULL.
+   */
+  private function getStockLinkId(string $assetId): string|null {
+    try {
+      $response = Http::withBasicAuth($this->username, $this->password)
+        ->withHeaders([
+          'Content-Type' => 'application/json',
+          'Accept' => 'application/json',
+        ])->timeout(30)->get($this->baseUrl . "/tas/api/assetmgmt/assetLinks?capabilityId={$this->topDeskStockRoomCapabilityId}&sourceId={$assetId}");
+
+      $linkId = NULL;
+
+      if ($response->successful()) {
+        $result = $response->json();
+        if (!empty($result) && isset($result[0]['linkId'])) {
+          $linkId = $result[0]['linkId'];
+        }
+        if (env('APP_DEBUG')) {
+          Log::info('TopDesk LinkId for stock', [
+            'asset_id' => $assetId,
+            'link_id' => $linkId,
+          ]);
+        }
+        return $linkId;
+      }
+
+      throw new \Exception('Failed to retrieve stock link ID: ' . $response->status());
+
+    }
+    catch (\Exception $e) {
+      Log::error('TopDesk API Error - Retrieve stock link ID', [
+        'message' => $e->getMessage(),
+        'asset_id' => $assetId,
+      ]);
+      throw $e;
+    }
+  }
+
+  /**
+   * Unlinks stock from asset.
+   *
+   * @param string $stockLinkId
+   *   A linkID that links an asset with a stock room.
+   *
+   * @return bool
+   *   Returns TRUE if successful.
+   */
+  private function unlinkStockroom(string $stockLinkId): bool {
+    try {
+      $response = Http::withBasicAuth($this->username, $this->password)
+        ->withHeaders([
+          'Content-Type' => 'application/json',
+          'Accept' => 'application/json',
+        ])->timeout(30)->delete($this->baseUrl . "/tas/api/assetmgmt/assetLinks/{$stockLinkId}", []);
+
+      if ($response->successful()) {
+        if (env('APP_DEBUG')) {
+          Log::info('TopDesk stock unlinked', [
+            'link_id' => $stockLinkId,
+          ]);
+        }
+        return TRUE;
+      }
+
+      throw new \Exception('Failed to unlink stock: ' . $response->status());
+
+    }
+    catch (\Exception $e) {
+      Log::error('TopDesk API Error - Unlink stock', [
+        'message' => $e->getMessage(),
+        'link_id' => $stockLinkId,
       ]);
       throw $e;
     }

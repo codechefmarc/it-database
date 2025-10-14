@@ -13,7 +13,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-baseline">
       <div class="space-y-2">
-        <label for="device_type" class="block text-sm font-semibold text-gray-700">Device Type</label>
+        <label for="device_type" class="block text-sm font-semibold text-gray-700">Device Type <span class="text-red-500 text-sm">*</span></label>
         <select id="device_type" name="device_type" required
           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-900 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed">
           <option value="">Loading device types...</option>
@@ -22,7 +22,7 @@
       </div>
 
       <div class="space-y-2">
-        <label for="make" class="block text-sm font-semibold text-gray-700">Make *</label>
+        <label for="make" class="block text-sm font-semibold text-gray-700">Make <span class="text-red-500 text-sm">*</span></label>
         <select id="make" name="make" required
           class="w-full px-3 h-10 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-900 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed">
           <option value="">Loading asset makes...</option>
@@ -31,7 +31,7 @@
       </div>
 
       <div class="space-y-2">
-        <label for="model" class="block text-sm font-semibold text-gray-700">Model <small>(Search or add new)</small></label>
+        <label for="model" class="block text-sm font-semibold text-gray-700">Model <small>(Search or add new) <span class="text-red-500 text-sm">*</span></small></label>
         <input type="text" id="model" name="model" required
           value="{{ old('model', session('bulk_scan.model', '')) }}"
           class="w-full">
@@ -41,7 +41,7 @@
 
     <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
       <div class="space-y-2">
-        <label for="campus" class="block text-sm font-semibold text-gray-700">Campus *</label>
+        <label for="campus" class="block text-sm font-semibold text-gray-700">Campus <span class="text-red-500 text-sm">*</span></label>
         <select id="campus" name="campus" required
           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-900 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed">
           <option value="">Loading campuses...</option>
@@ -50,7 +50,7 @@
       </div>
 
       <div class="space-y-2">
-        <label for="building" class="block text-sm font-semibold text-gray-700">Building *</label>
+        <label for="building" class="block text-sm font-semibold text-gray-700">Building <span class="text-red-500 text-sm">*</span></label>
         <select id="building" name="building" required disabled
           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-900 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed">
           <option value="">Select a campus first</option>
@@ -59,7 +59,7 @@
       </div>
 
       <div class="space-y-2">
-        <label for="room" class="block text-sm font-semibold text-gray-700">Room</label>
+        <label for="room" class="block text-sm font-semibold text-gray-700">Room <span class="text-red-500 text-sm">*</span></label>
         <input type="text" id="room" name="room" required
           value="{{ old('room', session('bulk_scan.room', '')) }}"
           class="bg-white w-full px-3 h-10 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
@@ -69,10 +69,10 @@
     <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
 
       <div class="space-y-2">
-        <label for="stock" class="block text-sm font-semibold text-gray-700">Stock</label>
+        <label for="stock" class="block text-sm font-semibold text-gray-700">Stockroom<br> <small>(If not set, will unset any currently linked stockrooms)</small></label>
         <select id="stock" name="stock"
           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-900 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed">
-          <option value="">Loading stock rooms...</option>
+          <option value="">Loading stockrooms...</option>
         </select>
         <div id="stock-error" class="hidden text-sm text-red-600"></div>
       </div>
@@ -90,14 +90,14 @@
 
     <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 items-baseline">
       <div class="space-y-2">
-        <label for="srjc_tag" class="block text-sm font-semibold text-gray-700">SRJC Tag</label>
+        <label for="srjc_tag" class="block text-sm font-semibold text-gray-700">SRJC Tag <span class="text-red-500 text-sm">*</span></label>
         <input type="text" id="srjc_tag" name="srjc_tag" required autofocus
           value="{{ old('srjc_tag') }}"
           class="bg-white w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
       </div>
 
       <div class="space-y-2">
-        <label for="serial_number" class="block text-sm font-semibold text-gray-700">Serial Number</label>
+        <label for="serial_number" class="block text-sm font-semibold text-gray-700">Serial Number <span class="text-red-500 text-sm">*</span></label>
         <input type="text" id="serial_number" name="serial_number" required
           value="{{ old('serial_number') }}"
           class="bg-white w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">

@@ -308,18 +308,18 @@ class AssetForm {
           this.populateStockRooms(data.data);
           this.hideError('stock-error');
       } else {
-          this.showError('stock-error', 'Failed to load stock rooms');
+          this.showError('stock-error', 'Failed to load stockrooms');
       }
     } catch (error) {
-      console.error('Error loading stock rooms:', error);
-      this.showError('stock-error', 'Error loading stock rooms');
+      console.error('Error loading stockrooms:', error);
+      this.showError('stock-error', 'Error loading stockrooms');
     } finally {
       this.setStockRoomsLoading(false);
     }
   }
 
   populateStockRooms(stock_rooms) {
-    this.stockSelect.innerHTML = '<option value="">Select a stock room</option>';
+    this.stockSelect.innerHTML = '<option value="">None</option>';
 
     stock_rooms.forEach(stock_room => {
       const option = document.createElement('option');
@@ -435,7 +435,7 @@ class AssetForm {
 
   setStockRoomsLoading(loading) {
     if (loading) {
-      this.stockSelect.innerHTML = '<option value="">Loading stock rooms...</option>';
+      this.stockSelect.innerHTML = '<option value="">Loading stockrooms...</option>';
       this.stockSelect.disabled = true;
     } else {
       this.stockSelect.disabled = false;
@@ -621,7 +621,7 @@ class AssetForm {
           <div class="text-xs text-gray-500">
             ${asset.campusName}
           </div>
-          ${(asset.stockRoom) ? '<div class="text-xs text-blue-500">Stock room: ' + asset.stockRoomName + '</div>' : ''}
+          ${(asset.stockRoom) ? '<div class="text-xs text-blue-500">Stockroom: ' + asset.stockRoomName + '</div>' : ''}
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
           <div class="text-sm text-gray-900">
