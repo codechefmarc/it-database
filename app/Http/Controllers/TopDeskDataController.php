@@ -6,7 +6,13 @@ use App\Services\TopDeskService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * Controller for the TOPdesk endpoints.
+ */
 class TopDeskDataController extends Controller {
+  /**
+   * The TOPdesk back-end service.
+   */
   private TopDeskService $topDeskService;
 
   public function __construct(TopDeskService $topDeskService) {
@@ -123,7 +129,7 @@ class TopDeskDataController extends Controller {
   }
 
   /**
-   * Get all asset stock rooms
+   * Get all asset stock rooms.
    */
   public function getStockRooms(): JsonResponse {
     try {

@@ -28,9 +28,9 @@ class TopDeskService {
    */
   private int $cacheMinutes = 60;
   /**
-   * TopDesk asset template ID. Default is "Computer".
+   * TopDesk template ID.
    */
-  private string $topDeskTemplateId = "A273AF5F-0881-4ABB-A66A-E3307631BF46";
+  private string $templateId;
   /**
    * Allowed templates for asset creation.
    *
@@ -40,7 +40,7 @@ class TopDeskService {
     "Computer",
   ];
   /**
-   * TopDesk capability ID for stock room assignment.
+   * TopDesk capability ID for stock room assignment. From API docs.
    */
   private string $topDeskStockRoomCapabilityId = "DAD98DAD-054B-41AE-A727-3E3B37342739";
 
@@ -48,6 +48,7 @@ class TopDeskService {
     $this->baseUrl = rtrim(config('services.topdesk.base_url'), '/');
     $this->username = config('services.topdesk.username');
     $this->password = config('services.topdesk.password');
+    $this->templateId = config('services.topdesk.template_id');
 
     if (empty($this->username) || empty($this->password)) {
       throw new \Exception('TopDesk credentials not configured. Please set TOPDESK_USERNAME and TOPDESK_PASSWORD in your .env file.');
@@ -56,6 +57,11 @@ class TopDeskService {
     if (empty($this->baseUrl)) {
       throw new \Exception('TopDesk base URL not configured. Please set TOPDESK_BASE_URL in your .env file.');
     }
+
+    if (empty($this->templateId)) {
+      throw new \Exception('TopDesk template ID not configured. Please set TOPDESK_TEMPLATE_ID in your .env file.');
+    }
+
   }
 
   /**
@@ -362,6 +368,8 @@ class TopDeskService {
    *
    * @param string $assetData
    *   Asset data passed from the form.
+   * @param string $modelId
+   *   The ID or string to lookup/create the model.
    *
    * @return array
    *   Returns the created asset data including its ID.
@@ -378,7 +386,7 @@ class TopDeskService {
           'Content-Type' => 'application/json',
           'Accept' => 'application/json',
         ])->timeout(30)->post($this->baseUrl . '/tas/api/assetmgmt/assets', [
-          'type_id' => $this->topDeskTemplateId,
+          'type_id' => $this->templateId,
           'name' => $assetData['srjc_tag'],
           'computer-type' => $assetData['device_type'] ?? NULL,
           'room' => $assetData['room'] ?? NULL,

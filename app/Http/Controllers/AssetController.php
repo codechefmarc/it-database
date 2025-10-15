@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Services\TopDeskService;
 use Illuminate\Http\Request;
 
+/**
+ * The asset controller. Currently only used for TOPdesk bulk scanning.
+ */
 class AssetController extends Controller {
   /**
    * The TopDesk service instance.
