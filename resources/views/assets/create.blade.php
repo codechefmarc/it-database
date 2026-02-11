@@ -69,17 +69,45 @@
     <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
 
       <div class="space-y-2">
-        <label for="stock" class="block text-sm font-semibold text-gray-700">Stockroom<br> <small>(If not set, will unset any currently linked stockrooms)</small></label>
+        <label for="team" class="block text-sm font-semibold text-gray-700">Responsible Team <span class="text-red-500 text-sm">*</span></label>
+        <select id="team" name="team" required
+          class="w-full px-3 h-10 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-900 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed">
+          <option value="">Loading teams...</option>
+        </select>
+        <div id="team-error" class="hidden text-sm text-red-600"></div>
+      </div>
+
+
+      <div class="space-y-2">
+        <label for="purchase_date" class="block text-sm font-semibold text-gray-700">Purchase Date</label>
+
+        <div class="relative max-w-sm">
+            <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
+            </div>
+            <input
+              type="date"
+              id="purchase_date"
+              name="purchase_date"
+              value="{{ old('purchase_date', session('bulk_scan.purchase_date', '')) }}"
+              class="bg-white w-full px-3 h-10 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+             />
+          </div>
+
+
+        <div id="purchase-date-error" class="hidden text-sm text-red-600"></div>
+      </div>
+
+      <div class="space-y-2">
+        <label for="stock" class="block text-sm font-semibold text-gray-700">Stockroom</label>
         <select id="stock" name="stock"
           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-900 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed">
           <option value="">Loading stockrooms...</option>
         </select>
+        <small>(If not set, will unset any currently linked stockrooms)</small>
         <div id="stock-error" class="hidden text-sm text-red-600"></div>
       </div>
 
-      <div class="space-y-2"></div>
-
-      <div class="space-y-2 flex gap-1 justify-end items-center align-middle">
+      <div class="space-y-2 flex gap-1 items-center align-middle">
         <input type="checkbox" id="surplus" name="surplus"
           value="{{ old('surplus', session('bulk_scan.surplus', '')) }}"
           class="m-0 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">

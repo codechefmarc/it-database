@@ -43,6 +43,7 @@ Route::middleware(['auth'])->group(function () {
   Route::get('/topdesk/campuses', [TopDeskDataController::class, 'getCampuses'])->name('getCampuses');
   Route::get('/topdesk/buildings', [TopDeskDataController::class, 'getBuildingsByCampus'])->name('getBuildings');
   Route::get('/topdesk/asset-makes', [TopDeskDataController::class, 'getAssetMakes'])->name('getAssetMakes');
+  Route::get('/topdesk/asset-teams', [TopDeskDataController::class, 'getAssetTeams'])->name('getAssetTeams');
   Route::get('/topdesk/asset-models', [TopDeskDataController::class, 'getAssetModels'])->name('getAssetModels');
   Route::get('/topdesk/stock-rooms', [TopDeskDataController::class, 'getStockRooms'])->name('getStockRooms');
   Route::get('/topdesk/templates', [TopDeskDataController::class, 'getTemplates'])->name('getTemplates');

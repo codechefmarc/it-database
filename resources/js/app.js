@@ -10,9 +10,11 @@ class AssetForm {
     this.buildingSelect = document.getElementById('building');
     this.roomInput = document.getElementById('room');
     this.makeSelect = document.getElementById('make');
+    this.teamSelect = document.getElementById('team');
     this.modelInput = document.getElementById('model');
     this.deviceTypeSelect = document.getElementById('device_type');
     this.stockSelect = document.getElementById('stock');
+    this.purchaseDateInput = document.getElementById('purchase_date');
     this.surplusInput = document.getElementById('surplus');
     this.addToListForm = document.getElementById('addToListForm');
     this.submitAllForm = document.getElementById('submitAllForm');
@@ -52,9 +54,11 @@ class AssetForm {
         building: parsed.building || '',
         room: parsed.room || '',
         make: parsed.make || '',
+        team: parsed.team || '',
         model: parsed.model || '',
         surplus: parsed.surplus || '',
-        stock_room: parsed.stock_room || ''
+        stock_room: parsed.stock_room || '',
+        purchase_date: parsed.purchase_date || ''
       };
     } catch (e) {
       console.error('Failed to parse saved bulk scan values', e);
@@ -66,6 +70,7 @@ class AssetForm {
     await this.loadDeviceTypes();
     await this.loadCampuses();
     await this.loadMakes();
+    await this.loadTeams();
     await this.loadStockRooms();
     this.initModelAutocomplete();
     await this.loadModels();
@@ -107,6 +112,8 @@ class AssetForm {
       this.makeSelect.dispatchEvent(new Event('change'));
     }
 
+    if (saved.team) this.teamSelect.value = saved.team;
+
     if (saved.room) this.roomInput.value = saved.room;
     if (saved.model) this.modelInput.value = saved.model;
 
@@ -118,6 +125,8 @@ class AssetForm {
       this.stockSelect.value = saved.stock_room;
       this.stockSelect.dispatchEvent(new Event('change'));
     }
+
+    if (saved.purchase_date) this.purchaseDateInput.value = saved.purchase_date;
 
   }
 
@@ -233,6 +242,45 @@ class AssetForm {
     }
   }
 
+  async loadTeams() {
+    try {
+      this.setTeamsLoading(true);
+
+      const response = await fetch(window.apiRoutes.assetTeams);
+      const data = await response.json();
+
+      console.log('WOOT', data);
+
+      if (data.success) {
+          this.populateTeams(data.data);
+          this.hideError('team-error');
+      } else {
+          this.showError('team-error', 'Failed to load teams');
+      }
+    } catch (error) {
+      console.error('Error loading teams:', error);
+      this.showError('team-error', 'Error loading teams');
+    } finally {
+      this.setTeamsLoading(false);
+    }
+  }
+
+  populateTeams(teams) {
+    this.teamSelect.innerHTML = '<option value="">Select a team</option>';
+
+    teams.forEach(make => {
+      const option = document.createElement('option');
+      option.value = team.id;
+      option.textContent = team.name;
+      this.teamSelect.appendChild(option);
+    });
+
+    // Restore saved team value after populating
+    if (this.savedValues.team) {
+      this.teamSelect.value = this.savedValues.team;
+    }
+  }
+
   async loadModels() {
     try {
       this.setModelsLoading(true);
@@ -328,7 +376,7 @@ class AssetForm {
       this.stockSelect.appendChild(option);
     });
 
-    // Restore saved make value after populating
+    // Restore saved stock value after populating
     if (this.savedValues.stock_room) {
       this.stockSelect.value = this.savedValues.stock_room;
     }
@@ -433,6 +481,15 @@ class AssetForm {
     }
   }
 
+  setTeamsLoading(loading) {
+    if (loading) {
+      this.teamSelect.innerHTML = '<option value="">Loading teams...</option>';
+      this.teamSelect.disabled = true;
+    } else {
+      this.teamSelect.disabled = false;
+    }
+  }
+
   setStockRoomsLoading(loading) {
     if (loading) {
       this.stockSelect.innerHTML = '<option value="">Loading stockrooms...</option>';
@@ -508,7 +565,7 @@ class AssetForm {
     const formData = new FormData(this.addToListForm);
 
     // Validate required fields
-    const requiredFields = ['device_type', 'campus', 'building', 'room', 'make', 'model', 'srjc_tag', 'serial_number'];
+    const requiredFields = ['device_type', 'campus', 'building', 'room', 'make', 'team', 'model', 'srjc_tag', 'serial_number'];
     const missingFields = [];
 
     requiredFields.forEach(field => {
@@ -533,11 +590,14 @@ class AssetForm {
       buildingName: this.getSelectText(this.buildingSelect),
       room: formData.get('room'),
       make: formData.get('make'),
+      team: formData.get('team'),
       makeName: this.getSelectText(this.makeSelect),
+      teamName: this.getSelectText(this.teamSelect),
       model: formData.get('model'),
       modelName: this.modelInput.nextElementSibling.firstChild.firstChild.innerHTML,
       stockRoom: formData.get('stock') || '',
       stockRoomName: this.getSelectText(this.stockSelect),
+      purchaseDate: formData.get('purchase_date') || '',
       surplus: this.surplusInput.checked ? 1 : 0,
       srjc_tag: formData.get('srjc_tag'),
       serial_number: formData.get('serial_number'),
@@ -564,9 +624,11 @@ class AssetForm {
       building: asset.building,
       room: asset.room,
       make: asset.make,
+      team: asset.team,
       model: asset.model,
       surplus: asset.surplus,
-      stock_room: asset.stockRoom
+      stock_room: asset.stockRoom,
+      purchase_date: asset.purchaseDate
     }));
 
     // Clear only the non-persistent fields
@@ -613,6 +675,9 @@ class AssetForm {
           <div class="text-xs text-gray-500">
             ${asset.deviceTypeName}
           </div>
+          <div class="text-xs text-gray-500">
+            ${asset.purchaseDate ? asset.purchaseDate : ''}
+          </div>
         </td>
         <td class="px-6 py-4 whitespace-nowrap">
           <div class="text-sm text-gray-900">
@@ -629,6 +694,9 @@ class AssetForm {
           </div>
           <div class="text-xs text-gray-500">
             SN: ${asset.serial_number}
+          </div>
+          <div class="text-xs text-gray-500">
+            Team: ${asset.teamName}
           </div>
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(asset.surplus) ? '<span class="text-red-500">Yes</span>' : 'No'}</td>

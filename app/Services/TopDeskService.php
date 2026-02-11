@@ -228,6 +228,34 @@ class TopDeskService {
   }
 
   /**
+   * Get teams for select dropdown.
+   */
+  public function getAssetTeams(): array {
+    return Cache::remember('topdesk.teams', $this->cacheMinutes * 60, function () {
+      try {
+        $response = Http::withBasicAuth($this->username, $this->password)
+          ->withHeaders([
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+          ])->timeout(30)->get($this->baseUrl . '/tas/api/assetmgmt/dropdowns/responsible-team?field=name');
+
+        if ($response->successful()) {
+            return $response->json();
+        }
+
+        throw new \Exception('Failed to fetch teams from TopDesk API. Status: ' . $response->status());
+
+      }
+      catch (\Exception $e) {
+        Log::error('TopDesk API Error - Get Teams', [
+          'message' => $e->getMessage(),
+        ]);
+        throw $e;
+      }
+    });
+  }
+
+  /**
    * Get models for select dropdown.
    */
   public function getAssetModels(): array {

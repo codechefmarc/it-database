@@ -109,6 +109,26 @@ class TopDeskDataController extends Controller {
   }
 
   /**
+   * Get all asset teams (for teams dropdowns).
+   */
+  public function getAssetTeams(): JsonResponse {
+    try {
+      $teams = $this->topDeskService->getAssetTeams();
+
+      return response()->json([
+        'success' => TRUE,
+        'data' => $teams['results'],
+      ]);
+    }
+    catch (\Exception $e) {
+      return response()->json([
+        'success' => FALSE,
+        'message' => 'Failed to load teams',
+      ], 500);
+    }
+  }
+
+  /**
    * Get all asset models (for make/model dropdowns)
    */
   public function getAssetModels(): JsonResponse {
