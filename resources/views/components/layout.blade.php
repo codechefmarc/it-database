@@ -103,6 +103,7 @@
         campuses: '{{ route("getCampuses") }}',
         buildings: '{{ route("getBuildings") }}',
         assetMakes: '{{ route("getAssetMakes") }}',
+        assetTeams: '{{ route("getAssetTeams") }}',
         assetModels: '{{ route("getAssetModels") }}',
         stockRooms: '{{ route("getStockRooms") }}',
         deviceTypes: '{{ route("getDeviceTypes") }}',

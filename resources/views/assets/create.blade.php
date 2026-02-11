@@ -79,16 +79,16 @@
 
 
       <div class="space-y-2">
-        <label for="purchase_date" class="block text-sm font-semibold text-gray-700">Purchase Date</label>
+        <label for="purchased" class="block text-sm font-semibold text-gray-700">Purchase Date</label>
 
         <div class="relative max-w-sm">
             <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
             </div>
             <input
               type="date"
-              id="purchase_date"
-              name="purchase_date"
-              value="{{ old('purchase_date', session('bulk_scan.purchase_date', '')) }}"
+              id="purchased"
+              name="purchased"
+              value="{{ old('purchased', session('bulk_scan.purchased', '')) }}"
               class="bg-white w-full px-3 h-10 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
              />
           </div>
@@ -115,6 +115,7 @@
       </div>
     </div>
 
+    <hr class="my-6 border-gray-300">
 
     <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 items-baseline">
       <div class="space-y-2">
@@ -164,6 +165,7 @@
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tracking</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Surplus</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>

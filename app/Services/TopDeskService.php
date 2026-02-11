@@ -423,6 +423,8 @@ class TopDeskService {
           'serial-number' => $assetData['serial_number'] ?? NULL,
           'notes' => $assetData['notes'] . "Added by IT database web app on " . date('Y-m-d H:i:s'),
           'surplus' => !empty($assetData['surplus']) ? TRUE : FALSE,
+          'responsible-team' => $assetData['team'] ?? NULL,
+          'purchase-date' => $assetData['purchased'] . 'T08:00:00.000' ?? NULL,
         ]);
 
       if ($response->successful()) {
@@ -759,6 +761,8 @@ class TopDeskService {
           'serial-number' => $assetData['serial_number'] ?? NULL,
           'notes' => $assetData['notes'] . "\nUpdated by IT database web app on " . date('Y-m-d H:i:s'),
           'surplus' => !empty($assetData['surplus']) ? TRUE : FALSE,
+          'responsible-team' => $assetData['team'] ?? NULL,
+          'purchase-date' => $assetData['purchased'] . 'T08:00:00.000' ?? NULL,
         ]);
       if ($response->successful()) {
         if (env('APP_DEBUG')) {

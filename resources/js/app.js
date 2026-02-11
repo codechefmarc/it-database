@@ -14,7 +14,7 @@ class AssetForm {
     this.modelInput = document.getElementById('model');
     this.deviceTypeSelect = document.getElementById('device_type');
     this.stockSelect = document.getElementById('stock');
-    this.purchaseDateInput = document.getElementById('purchase_date');
+    this.purchasedInput = document.getElementById('purchased');
     this.surplusInput = document.getElementById('surplus');
     this.addToListForm = document.getElementById('addToListForm');
     this.submitAllForm = document.getElementById('submitAllForm');
@@ -58,7 +58,7 @@ class AssetForm {
         model: parsed.model || '',
         surplus: parsed.surplus || '',
         stock_room: parsed.stock_room || '',
-        purchase_date: parsed.purchase_date || ''
+        purchased: parsed.purchased || ''
       };
     } catch (e) {
       console.error('Failed to parse saved bulk scan values', e);
@@ -126,7 +126,7 @@ class AssetForm {
       this.stockSelect.dispatchEvent(new Event('change'));
     }
 
-    if (saved.purchase_date) this.purchaseDateInput.value = saved.purchase_date;
+    if (saved.purchased) this.purchasedInput.value = saved.purchased;
 
   }
 
@@ -249,8 +249,6 @@ class AssetForm {
       const response = await fetch(window.apiRoutes.assetTeams);
       const data = await response.json();
 
-      console.log('WOOT', data);
-
       if (data.success) {
           this.populateTeams(data.data);
           this.hideError('team-error');
@@ -268,7 +266,7 @@ class AssetForm {
   populateTeams(teams) {
     this.teamSelect.innerHTML = '<option value="">Select a team</option>';
 
-    teams.forEach(make => {
+    teams.forEach(team => {
       const option = document.createElement('option');
       option.value = team.id;
       option.textContent = team.name;
@@ -597,7 +595,7 @@ class AssetForm {
       modelName: this.modelInput.nextElementSibling.firstChild.firstChild.innerHTML,
       stockRoom: formData.get('stock') || '',
       stockRoomName: this.getSelectText(this.stockSelect),
-      purchaseDate: formData.get('purchase_date') || '',
+      purchased: formData.get('purchased') || '',
       surplus: this.surplusInput.checked ? 1 : 0,
       srjc_tag: formData.get('srjc_tag'),
       serial_number: formData.get('serial_number'),
@@ -628,7 +626,7 @@ class AssetForm {
       model: asset.model,
       surplus: asset.surplus,
       stock_room: asset.stockRoom,
-      purchase_date: asset.purchaseDate
+      purchased: asset.purchased
     }));
 
     // Clear only the non-persistent fields
@@ -676,7 +674,7 @@ class AssetForm {
             ${asset.deviceTypeName}
           </div>
           <div class="text-xs text-gray-500">
-            ${asset.purchaseDate ? asset.purchaseDate : ''}
+            Purchased: ${asset.purchased ? asset.purchased : ''}
           </div>
         </td>
         <td class="px-6 py-4 whitespace-nowrap">
@@ -695,8 +693,10 @@ class AssetForm {
           <div class="text-xs text-gray-500">
             SN: ${asset.serial_number}
           </div>
-          <div class="text-xs text-gray-500">
-            Team: ${asset.teamName}
+        </td>
+        <td>
+          <div class="text-sm text-gray-900">
+            ${(asset.teamName) ? asset.teamName : 'Unknown team'}
           </div>
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(asset.surplus) ? '<span class="text-red-500">Yes</span>' : 'No'}</td>
