@@ -602,12 +602,15 @@ class AssetForm {
       created_at: new Date().toLocaleString()
     };
 
-    // Check for duplicate SRJC tag
+    // Check for duplicate SRJC tag.
     const existingAssets = this.getAssetsFromStorage();
     const duplicateTag = existingAssets.find(a => a.srjc_tag === asset.srjc_tag);
 
     if (duplicateTag) {
       this.showMessage(`SRJC Tag "${asset.srjc_tag}" already exists in the list`, 'error');
+      this.srjcTagInput.value = '';
+      this.serialNumberInput.value = '';
+      this.srjcTagInput.focus();
       return;
     }
 
