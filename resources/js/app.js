@@ -677,13 +677,7 @@ class AssetForm {
             ${asset.deviceTypeName}
           </div>
           <div class="text-xs text-gray-500">
-            Purchased ${asset.purchased ? (() => {
-              const date = new Date(asset.purchased + 'T00:00:00');
-              const month = String(date.getMonth() + 1).padStart(2, '0');
-              const day = String(date.getDate()).padStart(2, '0');
-              const year = date.getFullYear();
-              return `${month}/${day}/${year}`;
-            })() : ''}
+            Purchased: ${asset.purchased ? new Date(asset.purchased + 'T00:00:00').toLocaleDateString('en-US') : ''}
           </div>
         </td>
         <td class="px-6 py-4 whitespace-nowrap">
