@@ -366,6 +366,16 @@ class TopDeskService {
     });
   }
 
+  private const CACHE_KEYS = [
+    'topdesk.locations',
+    'topdesk.make',
+    'topdesk.teams',
+    'topdesk.models',
+    'topdesk.stock_rooms',
+    'topdesk.device_types',
+    'topdesk.templates',
+  ];
+
   /**
    * Clear the locations cache.
    *
@@ -373,9 +383,9 @@ class TopDeskService {
    *   Clears the cached.
    */
   public function clearCache(): void {
-    Cache::forget('topdesk.locations');
-    Cache::forget('topdesk.make');
-    Cache::forget('topdesk.templates');
+    foreach (self::CACHE_KEYS as $key) {
+      Cache::forget($key);
+    }
   }
 
   /**
