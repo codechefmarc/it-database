@@ -30,7 +30,16 @@ class TopDeskClearCache extends Command {
    */
   public function handle(TopDeskService $topDeskService) {
     $topDeskService->clearCache();
-    $this->info('TopDesk cache cleared.');
+
+    // Immediately warm the cache sequentially.
+    $topDeskService->getLocations();
+    $topDeskService->getAssetMakes();
+    $topDeskService->getAssetTeams();
+    $topDeskService->getAssetModels();
+    $topDeskService->getStockRooms();
+    $topDeskService->getDeviceTypes();
+
+    $this->info('TopDesk cache cleared and refreshed.');
     return self::SUCCESS;
   }
 
