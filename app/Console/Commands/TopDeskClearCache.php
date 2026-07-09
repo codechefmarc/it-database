@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Services\TopDeskService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Clears the cached TopDesk API responses.
@@ -39,6 +40,7 @@ class TopDeskClearCache extends Command {
     $topDeskService->getStockRooms();
     $topDeskService->getDeviceTypes();
 
+    Log::info('TopDesk cache cleared and refreshed successfully.');
     $this->info('TopDesk cache cleared and refreshed.');
     return self::SUCCESS;
   }
